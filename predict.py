@@ -1,0 +1,2 @@
+# use trained model to predict rmse and acc in future and plot one forecast for each variable
+# plot forecast graph with climatology, persistence, and model prediction with acc and rmse on top of each other for each variable
