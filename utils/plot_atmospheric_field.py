@@ -112,17 +112,18 @@ def plot_atmospheric_field(
 
 
 def plot_true_and_predicted_atomspheric_field(
-    x,
-    y,
+    left_x,
+    right_x,
     save=False,
     save_path=None,
     projection=ccrs.Orthographic(-10, 62),
     show=False,
     show_colorbar=False,
-    x_title="",
-    y_title="",
+    left_title="True",
+    right_title="Predicted",
     title="",
     height_title=0.95,
+    cmap="nipy_spectral"
 ):
     """
     Plots two atmospheric field data on a global map using Cartopy.
@@ -135,6 +136,11 @@ def plot_true_and_predicted_atomspheric_field(
         projection (cartopy.crs.Projection): Projection to use for the map. Default is Orthographic(-10, 62).
         show (bool): Whether to display the plot. Default is False.
         show_colorbar (bool): Whether to display the colorbar. Default is False.
+        x_title (str): Title of the x plot. Default is "".
+        y_title (str): Title of the y plot. Default is "".
+        title (str): Title of the plot. Default is "".
+        height_title (float): Height of the title. Default is 0.95.
+        cmap (str): Colormap to use for the plot. Default is "nipy_spectral".
 
     Returns:
         None
@@ -165,14 +171,14 @@ def plot_true_and_predicted_atomspheric_field(
         - WinkelTripel
     """
     # add 0 degree longitude to the end of the array
-    x = np.hstack((x, x[:, 0].reshape(-1, 1)))
-    y = np.hstack((y, y[:, 0].reshape(-1, 1)))
+    left_x = np.hstack((left_x, left_x[:, 0].reshape(-1, 1)))
+    right_x = np.hstack((right_x, right_x[:, 0].reshape(-1, 1)))
     # add average of first row to the beginning of the array
-    x = np.vstack((np.mean(x[0]) * np.ones((1, x.shape[1])), x))
-    y = np.vstack((np.mean(y[0]) * np.ones((1, y.shape[1])), y))
+    left_x = np.vstack((np.mean(left_x[0]) * np.ones((1, left_x.shape[1])), left_x))
+    right_x = np.vstack((np.mean(right_x[0]) * np.ones((1, right_x.shape[1])), right_x))
     # add average of last row to the end of the array
-    x = np.vstack((x, np.mean(x[-1]) * np.ones((1, x.shape[1]))))
-    y = np.vstack((y, np.mean(y[-1]) * np.ones((1, y.shape[1]))))
+    left_x = np.vstack((left_x, np.mean(left_x[-1]) * np.ones((1, left_x.shape[1]))))
+    right_x = np.vstack((right_x, np.mean(right_x[-1]) * np.ones((1, right_x.shape[1]))))
     phi = np.rad2deg(np.arange(0, 2 * np.pi + np.deg2rad(3), np.deg2rad(3)))
     theta = 88.5 - np.arange(0, 180, 3)
     theta = np.hstack((90, theta, -90))
@@ -188,46 +194,45 @@ def plot_true_and_predicted_atomspheric_field(
     filled_c1 = axs[0].contourf(
         lons,
         lats,
-        x,
-        np.arange(45, 60.5, 0.5) * 10**3,
+        left_x,
+        np.linspace(left_x.min()*0.98, left_x.max()*1.02, 30),
         transform=ccrs.PlateCarree(),
-        cmap="nipy_spectral",
+        cmap=cmap,
     )
     filled_c2 = axs[1].contourf(
         lons,
         lats,
-        y,
-        np.arange(45, 60.5, 0.5) * 10**3,
+        right_x,
+        np.linspace(left_x.min()*0.98, left_x.max()*1.02, 30),
         transform=ccrs.PlateCarree(),
-        cmap="nipy_spectral",
+        cmap=cmap,
     )
 
     # Create a contour plot of the data with the same levels as the filled contour plot
     line_c1 = axs[0].contour(
         lons,
         lats,
-        x,
+        left_x,
         levels=filled_c1.levels,
-        linewidths=0.4,
+        linewidths=0.3,
         colors=["black"],
         transform=ccrs.PlateCarree(),
     )
     line_c2 = axs[1].contour(
         lons,
         lats,
-        y,
+        right_x,
         levels=filled_c2.levels,
-        linewidths=0.4,
+        linewidths=0.3,
         colors=["black"],
         transform=ccrs.PlateCarree(),
     )
 
-    # Create a contour plot of the data with a single level of 5500 gpm
     line_c3 = axs[0].contour(
         lons,
         lats,
-        x,
-        levels=[55 * 10**3],
+        left_x,
+        levels=[left_x.mean()],
         linewidths=2,
         colors=["black"],
         transform=ccrs.PlateCarree(),
@@ -235,15 +240,15 @@ def plot_true_and_predicted_atomspheric_field(
     line_c4 = axs[1].contour(
         lons,
         lats,
-        y,
-        levels=[55 * 10**3],
+        right_x,
+        levels=[right_x.mean()],
         linewidths=2,
         colors=["black"],
         transform=ccrs.PlateCarree(),
     )
 
-    axs[0].set_title(x_title)
-    axs[1].set_title(y_title)
+    axs[0].set_title(left_title)
+    axs[1].set_title(right_title)
 
     # Add coastlines to the plot and set the global extent
     axs[0].coastlines()

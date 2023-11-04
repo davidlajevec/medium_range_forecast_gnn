@@ -1,28 +1,65 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Batch
+from datasets.atmospheric_dataset import AtmosphericDataset
+from torch_geometric.nn import GCNConv, GATConv
+from utils.mesh_creation import create_k_nearest_neighboors_edges
 
-def train(model, optimizer, criterion, train_loader, device):
+from models import gcn
+
+BATCH_SIZE = 32
+EPOCHS = 5
+VARIABLES = ["geopotential_500"]
+NUM_VARIABLES = len(VARIABLES)
+
+model = gcn.GCN(in_channels=NUM_VARIABLES, 
+    hidden_channels=16, 
+    out_channels=NUM_VARIABLES)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
+criterion = torch.nn.MSELoss()
+
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+edge_index = torch.tensor(edge_index, dtype=torch.long)
+
+training_dataset = AtmosphericDataset(edge_index=edge_index, atmosphere_variables=VARIABLES, start_year=1950, end_year=1950)
+validation_dataset = AtmosphericDataset(edge_index=edge_index, atmosphere_variables=VARIABLES, start_year=2003, end_year=2008)
+training_dataloader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True)
+validation_dataloader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+best_val_loss = float("inf")
+for epoch in range(EPOCHS):
+    print("-"*50)
+    print(f"Epoch: {epoch+1:03d}")
+    training_loss = 0
     model.train()
-
-    for data in train_loader:
-        data = data.to(device)
+    for i, data in enumerate(training_dataloader):
+        print(f"Batch: {i+1}/{len(training_dataloader)}")
+        data.to(device)
         optimizer.zero_grad()
-        out = model(data)
-        loss = criterion(out, data.y)
+        
+        y_pred = model(data.x, data.edge_index) 
+        y = data.y
+
+        loss = criterion(y_pred, y)
+        training_loss += loss.item()
         loss.backward()
         optimizer.step()
+        print(f"Loss: {training_loss/(i+1):.4f}")
 
-def evaluate(model, loader, device):
     model.eval()
-
-    correct = 0
-    total = 0
-    for data in loader:
-        data = data.to(device)
-        with torch.no_grad():
-            out = model(data)
-            pred = out.argmax(dim=1)
-            correct += pred.eq(data.y).sum().item()
-            total += data.num_nodes
-    return correct / total
+    for i, data in enumerate(validation_dataloader):
+        data.to(device)
+        # make prediction
+        y_pred = model(data.x, data.edge_index) 
+        y = data.y
+        loss += criterion(y_pred, y).item()
+    val_loss = loss/len(validation_dataloader)
+    print(f"Validation Loss: {val_loss:.4f}")
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), "checkpoints/model.pt")
+        print("Model saved!")

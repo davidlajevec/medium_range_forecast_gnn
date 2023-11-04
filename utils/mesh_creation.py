@@ -36,9 +36,9 @@ def create_k_nearest_neighboors_edges(radius=1, k=12):
     # Create edge_index sparse matrix
     row = np.repeat(np.arange(len(points)), k)
     col = indices.flatten()
-    edge_index = coo_matrix((np.ones(len(row)), (row, col)), shape=(len(points), len(points)))
+    edge_index = np.vstack((row, col))
     return edge_index, edge_attrs, points
 
 if __name__ == "__main__":
-    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=12)
-    print(len(edge_index))
+    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=4)
+    print(edge_index.shape)
