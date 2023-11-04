@@ -4,9 +4,9 @@ import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 
-class GAT(MessagePassing):
+class Model(MessagePassing):
     def __init__(self, in_channels, out_channels, heads=1, dropout=0.0):
-        super(GAT, self).__init__(aggr='add')
+        super(Model, self).__init__(aggr='add')
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.heads = heads
