@@ -12,7 +12,13 @@ class GCN(nn.Module):
         self.bn2 = nn.BatchNorm1d(hidden_channels)
         self.conv3 = GCNConv(hidden_channels, hidden_channels)
         self.bn3 = nn.BatchNorm1d(hidden_channels)
-        self.conv4 = GCNConv(hidden_channels, out_channels)
+        self.conv4 = GCNConv(hidden_channels, hidden_channels)
+        self.bn4 = nn.BatchNorm1d(hidden_channels)
+        self.conv5 = GCNConv(hidden_channels, hidden_channels)
+        self.bn5 = nn.BatchNorm1d(hidden_channels)
+        self.conv6 = GCNConv(hidden_channels, hidden_channels)
+        self.bn6 = nn.BatchNorm1d(hidden_channels)
+        self.conv7 = GCNConv(hidden_channels, out_channels)
 
     def forward(self, x, edge_index):
         # first layer
@@ -33,8 +39,26 @@ class GCN(nn.Module):
         x = F.relu(x)
         x = F.dropout(x, p = 0.05, training=self.training)
 
-        # output layer
+        # fourth layer
         x = self.conv4(x, edge_index)
+        x = self.bn4(x)
+        x = F.relu(x)
+        x = F.dropout(x, p = 0.05, training=self.training)
+
+        # fifth layer
+        x = self.conv5(x, edge_index)
+        x = self.bn5(x)
+        x = F.relu(x)
+        x = F.dropout(x, p = 0.05, training=self.training)
+
+        # sixth layer
+        x = self.conv6(x, edge_index)
+        x = self.bn6(x)
+        x = F.relu(x)
+        x = F.dropout(x, p = 0.05, training=self.training)
+
+        # output layer
+        x = self.conv7(x, edge_index)
         return x
 
 if __name__ == "__main__":

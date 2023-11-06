@@ -23,6 +23,12 @@ class AtmosphericDataset(torch.utils.data.Dataset):
 
         self.atmosphere_variables = atmosphere_variables
 
+        phi = np.rad2deg(np.arange(0, 2 * np.pi + np.deg2rad(3), np.deg2rad(3)))
+        theta = 88.5 - np.arange(0, 180, 3)
+        theta = np.hstack((90, theta, -90))
+
+        self.lons, self.lats = np.meshgrid(phi, theta)
+
         mean_fields = []
         std_fields = []
         for variable in atmosphere_variables:
