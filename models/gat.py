@@ -4,9 +4,9 @@ import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 
-class Model(MessagePassing):
+class GAT(MessagePassing):
     def __init__(self, in_channels, out_channels, heads=1, dropout=0.0):
-        super(Model, self).__init__(aggr='add')
+        super(GAT, self).__init__(aggr='add')
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.heads = heads
@@ -44,3 +44,13 @@ class Model(MessagePassing):
         alpha_sum = degree(row, alpha, dtype=alpha.dtype)
         alpha_sum[alpha_sum == 0] = 1
         return alpha / alpha_sum[row]
+    
+if __name__ == "__main__":
+    x = torch.randn(10, 3)  # 10 nodes, 16 features per node
+    edge_index = torch.tensor([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 2, 4, 6, 8],
+                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 3, 4, 5, 7, 9]], dtype=torch.long)
+
+    model = GAT(in_channels=3, hidden_channels=16, out_channels=3)
+
+    output = model(x, edge_index)
+    print(output.shape)  # torch.Size([10, 3])
