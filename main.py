@@ -1,30 +1,78 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.datasets import Planetoid
-from torch_geometric.nn import GCNConv, GATConv
-from torch_geometric.utils import train_test_split_edges
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Batch
+from datasets.atmospheric_dataset import AtmosphericDataset
+import matplotlib.pyplot as plt
+from utils.mesh_creation import create_k_nearest_neighboors_edges
+from models import gcn
+import os
+import csv
 
-from models.gcn import GCN
-from models.gat import GAT
-from datasets.atmospheric_dataset import load_data
-from train import train
+# Define constants
+TRAINING_NAME = "gcn_1"
+BATCH_SIZE = 32
+EPOCHS = 15
+VARIABLES = ["geopotential_500", "u_500", "v_500"]
+NUM_VARIABLES = len(VARIABLES)
+HIDDEN_CHANNELS = 16
+LR = 0.01
+GAMMA = 0.7
+START_YEAR = 1950
+END_YEAR = 1970
 
-# Load and preprocess data
-dataset = 'Cora'
-data = load_data(dataset)
-data = train_test_split_edges(data)
+# Define the model
+model = gcn.GCN(
+    in_channels=NUM_VARIABLES,
+    hidden_channels=HIDDEN_CHANNELS,
+    out_channels=NUM_VARIABLES,
+)
 
-# Set up model
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = GCN(data.num_features, 16, data.num_classes).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+# Define the optimizer and loss function
+optimizer = torch.optim.Adam(
+    model.parameters(), 
+    lr=LR,
+    )
+    
+criterion = torch.nn.MSELoss()
 
-# Train model
-train(model, optimizer, data, device)
+# Create edges and points
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
+edge_index = torch.tensor(edge_index, dtype=torch.long)
 
-# Evaluate model on test set
-model.eval()
-_, pred = model(data.x.to(device), data.train_pos_edge_index.to(device))
-correct = pred.eq(data.y.to(device)).sum().item()
-acc = correct / data.num_nodes
-print(f'Test Accuracy: {acc:.4f}')
+# Define the scheduler
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
+
+# Load the training and validation datasets
+training_dataset = AtmosphericDataset(
+    edge_index=edge_index,
+    atmosphere_variables=VARIABLES,
+    start_year=START_YEAR,
+    end_year=END_YEAR,
+)
+validation_dataset = AtmosphericDataset(
+    edge_index=edge_index,
+    atmosphere_variables=VARIABLES,
+    start_year=2003,
+    end_year=2006,
+)
+training_dataloader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True)
+validation_dataloader = DataLoader(
+    validation_dataset, batch_size=BATCH_SIZE, shuffle=True
+)
+
+# Set the device to GPU if available, otherwise CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Train the model
+train(
+    model=model,
+    device=device,
+    epochs=EPOCHS,
+    training_dataloader=training_dataloader,
+    validation_dataloader=validation_dataloader,
+    optimizer=optimizer,
+    scheduler=scheduler,
+    criterion=criterion,
+    training_name=TRAINING_NAME,
+)

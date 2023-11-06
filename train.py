@@ -23,6 +23,21 @@ def train(model, device, epochs, training_dataloader, validation_dataloader, opt
     training_losses = []
     validation_losses = []
 
+    # Save training parameters to a CSV file
+    with open(f"{saving_path}/training_parameters.csv", mode="w") as file:
+        writer = csv.writer(file)
+        writer.writerow(["parameter", "value"])
+        writer.writerow(["training_name", training_name])
+        writer.writerow(["batch_size", BATCH_SIZE])
+        writer.writerow(["epochs", epochs])
+        writer.writerow(["variables", VARIABLES])
+        writer.writerow(["num_variables", NUM_VARIABLES])
+        writer.writerow(["hidden_channels", HIDDEN_CHANNELS])
+        writer.writerow(["learning_rate", LR])
+        writer.writerow(["gamma", GAMMA])
+        writer.writerow(["start_year", START_YEAR])
+        writer.writerow(["end_year", END_YEAR])
+
     # Train the model for the specified number of epochs
     for epoch in range(epochs):
         print("-" * 50)
