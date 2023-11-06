@@ -21,7 +21,10 @@ spherical_distance = np.vectorize(spherical_distance)
 def create_k_nearest_neighboors_edges(radius=1, k=12):
     # Create points on sphere with 3 degree resolution
     phi = np.arange(0, 2 * np.pi, np.deg2rad(3))
-    theta = np.deg2rad(-88.5 + np.arange(0, 180, 3))
+    #theta = np.deg2rad(-88.5 + np.arange(0, 180, 3))
+    #theta = np.deg2rad(np.arange(0, 180, 3)) #problem because first point needs to be at -88.5
+    theta = np.deg2rad(np.arange(0.5, 180, 3))
+    #print(len(theta))
     phi, theta = np.meshgrid(phi, theta)
     x = radius * np.sin(theta) * np.cos(phi)
     y = radius * np.sin(theta) * np.sin(phi)
@@ -32,7 +35,8 @@ def create_k_nearest_neighboors_edges(radius=1, k=12):
     # Find k nearest neighbors for each point
     indices = np.argsort(dists, axis=1)[:, 1:k+1]
     # Compute edge attributes as spherical distance between points
-    edge_attrs = dists[indices]
+    #edge_attrs = dists[indices]
+    edge_attrs = dists[np.arange(len(points))[:, None], indices]
     # Create edge_index sparse matrix
     row = np.repeat(np.arange(len(points)), k)
     col = indices.flatten()
@@ -42,3 +46,4 @@ def create_k_nearest_neighboors_edges(radius=1, k=12):
 if __name__ == "__main__":
     edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=4)
     print(edge_index.shape)
+
