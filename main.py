@@ -75,8 +75,8 @@ validation_dataset = AtmosphericDataset(
 test_dataset = AtmosphericDataset(
     edge_index=edge_index,
     atmosphere_variables=VARIABLES,
-    start_year=START_YEAR_VALIDATION,
-    end_year=END_YEAR_VALIDATION,
+    start_year=START_YEAR_TEST,
+    end_year=END_YEAR_TEST,
 )
 
 # Set the device to GPU if available, otherwise CPU
