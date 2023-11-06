@@ -71,8 +71,11 @@ class AtmosphericDataset(torch.utils.data.Dataset):
         x = self.standardize(x).view(-1, len(self.atmosphere_variables))
         y = torch.stack(data_y, dim=2)
         y = self.standardize(y).view(-1, len(self.atmosphere_variables))
-        return Data(x=x, edge_index=self.edge_index, y=y)
-        # return Data(x=x, edge_index=self.edge_index, edge_attr=self.edge_attributes, y=y)
+        
+        if self.edge_attributes:
+            return Data(x=x, edge_index=self.edge_index, edge_attr=self.edge_attributes, y=y)
+        else:
+            return Data(x=x, edge_index=self.edge_index, y=y)
 
     def __getitem__(self, idx):
         return self.process(idx)

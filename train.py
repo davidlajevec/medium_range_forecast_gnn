@@ -9,42 +9,45 @@ from utils.mesh_creation import create_k_nearest_neighboors_edges
 from models import gcn
 import os
 import csv
+import json
 
-def train(model, device, epochs, training_dataloader, validation_dataloader, optimizer, scheduler, criterion, training_name):
+
+def train(model, device, epochs, training_dataset, validation_dataset, batch_size, optimizer, scheduler, criterion, training_name, patience):
     saving_path = "trained_models/" + training_name
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
     
     print(f"Training on: {device}")
+    print(f"Model name: {training_name}")
     model.to(device)
     best_val_loss = float("inf")
+    early_stop_counter = 0
 
     # Initialize lists to store training and validation losses
     training_losses = []
     validation_losses = []
 
-    # Save training parameters to a CSV file
-    with open(f"{saving_path}/training_parameters.csv", mode="w") as file:
-        writer = csv.writer(file)
-        writer.writerow(["parameter", "value"])
-        writer.writerow(["training_name", training_name])
-        writer.writerow(["batch_size", BATCH_SIZE])
-        writer.writerow(["epochs", epochs])
-        writer.writerow(["variables", VARIABLES])
-        writer.writerow(["num_variables", NUM_VARIABLES])
-        writer.writerow(["hidden_channels", HIDDEN_CHANNELS])
-        writer.writerow(["learning_rate", LR])
-        writer.writerow(["gamma", GAMMA])
-        writer.writerow(["start_year", START_YEAR])
-        writer.writerow(["end_year", END_YEAR])
+    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
+    validation_dataloader = DataLoader(
+        validation_dataset, batch_size=batch_size, shuffle=True
+    )
 
+    # Save the edge index and edge attributes to a file
+    with open(f"{saving_path}/edge_index.txt", mode="w") as file:
+        file.write(str(training_dataset[0].edge_index.tolist()))
+    try:
+        with open(f"{saving_path}/edge_attr.txt", mode="w") as file:
+            file.write(str(training_dataset[0].edge_attr.tolist()))  
+    except:
+        pass
+    
     # Train the model for the specified number of epochs
     for epoch in range(epochs):
         print("-" * 50)
         print(f"Epoch: {epoch+1:03d}/{epochs}")
         training_loss = 0
         model.train()
-        for i, data in enumerate(training_dataloader):
+        for i, data in enumerate(training_dataloader):                
             data.to(device)
             optimizer.zero_grad()
 
@@ -78,10 +81,17 @@ def train(model, device, epochs, training_dataloader, validation_dataloader, opt
         # Save the model if it has the best validation loss so far
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            early_stop_counter = 0
             # Trace model
             traced_model = torch.jit.trace(model, (data.x, data.edge_index))
             torch.jit.save(traced_model, f"{saving_path}/traced_model.pt")
             print("Model saved!")
+        else:
+            early_stop_counter += 1
+            if early_stop_counter >= patience:
+                print(f"Validation loss did not improve for {patience} epochs. Stopping early.")
+                break
+
 
         # Save training and validation losses to a CSV file
         training_losses.append(training_loss / len(training_dataloader))
@@ -104,16 +114,17 @@ def train(model, device, epochs, training_dataloader, validation_dataloader, opt
 
 if __name__=="__main__":
     # Define constants
-    TRAINING_NAME = "gcn_1"
-    BATCH_SIZE = 32
-    EPOCHS = 15
+    TRAINING_NAME = "gcn1"
+    BATCH_SIZE = 16
+    EPOCHS = 1
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
     NUM_VARIABLES = len(VARIABLES)
-    HIDDEN_CHANNELS = 16
-    LR = 0.01
-    GAMMA = 0.7
-    START_YEAR = 1950
-    END_YEAR = 1970
+    HIDDEN_CHANNELS = 32
+    LR = 0.0005
+    GAMMA = 0.9
+    START_YEAR_TRAINING = 1950
+    END_YEAR_TRAINING = 1950
+    PATIENCE = 2
 
     # Define the model
     model = gcn.GCN(
@@ -131,7 +142,7 @@ if __name__=="__main__":
     criterion = torch.nn.MSELoss()
 
     # Create edges and points
-    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
+    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
 
     # Define the scheduler
@@ -141,18 +152,14 @@ if __name__=="__main__":
     training_dataset = AtmosphericDataset(
         edge_index=edge_index,
         atmosphere_variables=VARIABLES,
-        start_year=START_YEAR,
-        end_year=END_YEAR,
+        start_year=START_YEAR_TRAINING,
+        end_year=END_YEAR_TRAINING,
     )
     validation_dataset = AtmosphericDataset(
         edge_index=edge_index,
         atmosphere_variables=VARIABLES,
         start_year=2003,
         end_year=2006,
-    )
-    training_dataloader = DataLoader(training_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    validation_dataloader = DataLoader(
-        validation_dataset, batch_size=BATCH_SIZE, shuffle=True
     )
 
     # Set the device to GPU if available, otherwise CPU
@@ -163,10 +170,12 @@ if __name__=="__main__":
         model=model,
         device=device,
         epochs=EPOCHS,
-        training_dataloader=training_dataloader,
-        validation_dataloader=validation_dataloader,
+        training_dataset=training_dataset,
+        validation_dataset=validation_dataset,
+        batch_size=BATCH_SIZE,
         optimizer=optimizer,
         scheduler=scheduler,
         criterion=criterion,
         training_name=TRAINING_NAME,
+        patience=PATIENCE
     )

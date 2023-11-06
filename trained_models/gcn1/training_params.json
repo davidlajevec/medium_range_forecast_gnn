@@ -1,0 +1,1 @@
+{"training_name": "gcn1", "batch_size": 16, "epochs": 1, "variables": ["geopotential_500", "u_500", "v_500"], "num_variables": 3, "hidden_channels": 32, "lr": 0.0005, "gamma": 0.9, "start_year_training": 1950, "end_year_training": 1950, "patience": 2}
