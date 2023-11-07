@@ -1,0 +1,11 @@
+parameter,value
+training_name,gcn
+batch_size,16
+epochs,15
+variables,"['geopotential_500', 'u_500', 'v_500']"
+num_variables,3
+hidden_channels,32
+learning_rate,0.001
+gamma,0.9
+start_year,1950
+end_year,1970

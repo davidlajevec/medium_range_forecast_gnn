@@ -1,30 +1,128 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.datasets import Planetoid
-from torch_geometric.nn import GCNConv, GATConv
-from torch_geometric.utils import train_test_split_edges
-
-from models.gcn import GCN
-from models.gat import GAT
-from datasets.atmospheric_dataset import load_data
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Batch
+from datasets.atmospheric_dataset import AtmosphericDataset
+import matplotlib.pyplot as plt
+from utils.mesh_creation import create_k_nearest_neighboors_edges
+from models import gcn
 from train import train
+from predict import predict
+import os
+import csv
+import json
 
-# Load and preprocess data
-dataset = 'Cora'
-data = load_data(dataset)
-data = train_test_split_edges(data)
+# Define constants
+TRAINING_NAME = "gcn_24_edges"
+BATCH_SIZE = 8
+EPOCHS = 3
+VARIABLES = ["geopotential_500", "u_500", "v_500"]
+NUM_VARIABLES = len(VARIABLES)
+HIDDEN_CHANNELS = 128
+LR = 0.001
+GAMMA = 0.99
+PATIENCE = 3
 
-# Set up model
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = GCN(data.num_features, 16, data.num_classes).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 
-# Train model
-train(model, optimizer, data, device)
+START_YEAR_TRAINING = 1950
+END_YEAR_TRAINING = 1970
 
-# Evaluate model on test set
-model.eval()
-_, pred = model(data.x.to(device), data.train_pos_edge_index.to(device))
-correct = pred.eq(data.y.to(device)).sum().item()
-acc = correct / data.num_nodes
-print(f'Test Accuracy: {acc:.4f}')
+START_YEAR_VALIDATION = 2003
+END_YEAR_VALIDATION = 2006
+
+START_YEAR_TEST = 2022
+END_YEAR_TEST = 2022
+
+PLOT = False
+
+# Define the model
+model = gcn.GCN(
+    in_channels=NUM_VARIABLES,
+    hidden_channels=HIDDEN_CHANNELS,
+    out_channels=NUM_VARIABLES,
+)
+
+# Define the optimizer and loss function
+optimizer = torch.optim.Adam(
+    model.parameters(), 
+    lr=LR,
+    )
+    
+criterion = torch.nn.MSELoss()
+
+# Create edges and points
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
+edge_index = torch.tensor(edge_index, dtype=torch.long)
+
+# Define the scheduler
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
+
+# Load the training and validation datasets
+training_dataset = AtmosphericDataset(
+    edge_index=edge_index,
+    atmosphere_variables=VARIABLES,
+    start_year=START_YEAR_TRAINING,
+    end_year=END_YEAR_TRAINING,
+)
+validation_dataset = AtmosphericDataset(
+    edge_index=edge_index,
+    atmosphere_variables=VARIABLES,
+    start_year=START_YEAR_VALIDATION,
+    end_year=END_YEAR_VALIDATION,
+)
+
+test_dataset = AtmosphericDataset(
+    edge_index=edge_index,
+    atmosphere_variables=VARIABLES,
+    start_year=START_YEAR_TEST,
+    end_year=END_YEAR_TEST,
+)
+
+# Set the device to GPU if available, otherwise CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+training_parameters = {
+    'epoch': EPOCHS,
+    'batch_size': BATCH_SIZE,
+    'learning_rate': LR,
+    'gamma': GAMMA,
+    'patience': PATIENCE,
+    'training_name': TRAINING_NAME,
+    'variables': VARIABLES,
+    'start_year_training': START_YEAR_TRAINING,
+    'end_year_training': END_YEAR_TRAINING,
+    'start_year_validation': START_YEAR_VALIDATION,
+    'end_year_validation': END_YEAR_VALIDATION,
+    'start_year_test': START_YEAR_TEST,
+    'end_year_test': END_YEAR_TEST,
+}
+
+# Train the model
+train(
+    model=model,
+    device=device,
+    epochs=EPOCHS,
+    training_dataset=training_dataset,
+    validation_dataset=validation_dataset,
+    batch_size=BATCH_SIZE,
+    optimizer=optimizer,
+    scheduler=scheduler,
+    criterion=criterion,
+    training_name=TRAINING_NAME,
+    patience=PATIENCE
+)
+
+with open(f"trained_models/{TRAINING_NAME}/training_parameters.json", "w") as f:
+    json.dump(training_parameters, f)
+
+predict(
+    TRAINING_NAME,
+    plot=PLOT,
+    variables=VARIABLES,
+    projections=PROJECTIONS,
+    device=device,
+    dataset=test_dataset,
+    forecast_length=10,
+    plot_index=0
+)
