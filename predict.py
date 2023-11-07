@@ -2,16 +2,14 @@ import torch
 from datasets.atmospheric_dataset import AtmosphericDataset
 from utils.mesh_creation import create_k_nearest_neighboors_edges
 from utils.plot_atmospheric_field import plot_true_and_predicted_atomspheric_field
-from utils.utils import (
-    filename_to_climatology,
-    spherical_weighted_rmse,
-    spherical_weighted_acc,
-)
+from utils.utils import filename_to_climatology
+from utils.metrics import spherical_weighted_rmse, spherical_weighted_acc
 import os
 import random
 from cartopy import crs as ccrs
 import numpy as np
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def predict(
@@ -78,7 +76,7 @@ def predict(
                 print(f"Predicting {index}/{len(indices)}", end="\r")
             for i in range(1, forecast_length * 2 + 1):
                 data = dataset[index + i]
-                data.to(device)
+                #data.to(device)
                 if i == 1:
                     y_pred = model(data.x, data.edge_index)
                     y_persistence_grid = data.x.view(60, 120, num_variables).cpu()
@@ -96,7 +94,7 @@ def predict(
                     climatology_field = filename_to_climatology(
                         dataset.file_names[j][i]
                     )
-                    # calculate rmse and acc using prediction
+
                     rmse[variable][index, i] = spherical_weighted_rmse(
                         y_true_grid[:, :, j],
                         y_pred_grid[:, :, j],
@@ -150,7 +148,6 @@ def predict(
         days = [i / 2 for i in range(forecast_length * 2 + 1)]
         for variable in variables:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 5))
-
             acc_mean = np.mean(acc[variable], axis=0)
             ax1.plot(days, acc_mean, label="prediction")
             acc_climatology_mean = np.mean(acc_climatology[variable], axis=0)
@@ -194,15 +191,15 @@ def predict(
 
 
 if __name__ == "__main__":
-    FORECAST_LENGTH = 10  # days
+    FORECAST_LENGTH = 14  # days
     PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
     PLOT = False
     PLOT_INDEX = 0
-    NUM_PREDICTIONS = 20
+    NUM_PREDICTIONS = 120
 
     # load trained model
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "gcn"
+    MODEL_NAME = "gcn2"
 
     edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
@@ -210,8 +207,8 @@ if __name__ == "__main__":
     dataset = AtmosphericDataset(
         edge_index=edge_index,
         atmosphere_variables=VARIABLES,
-        start_year=2022,
-        end_year=2022,
+        start_year=2019,
+        end_year=2019,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

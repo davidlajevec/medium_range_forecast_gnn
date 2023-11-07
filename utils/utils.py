@@ -44,35 +44,3 @@ def filename_to_climatology(data_filename, data_root="data_12hr"):
     climatology = np.load(climatology_path)
     return climatology
 
-
-def spherical_weight(lat):
-    """
-    Computes the spherical weight for a given latitude.
-
-    Args:
-        lat (numpy.ndarray): Array of latitudes in degrees.
-
-    Returns:
-        numpy.ndarray: Array of spherical weights.
-    """
-    cos_lat = np.cos(np.radians(lat)) 
-    normalization = np.sum(cos_lat[:,0])*lat.shape[0]
-    return cos_lat/normalization
-
-def spherical_weighted_rmse(y_true, y_pred, lat):
-    """
-    Calculate the spherical weighted root mean squared error (RMSE) between two arrays of atmospheric variables.
-    """
-    weights = spherical_weight(lat)
-    rmse = np.sqrt(np.mean(weights * (y_true - y_pred) ** 2))
-    return rmse
-
-def spherical_weighted_acc(y_true, y_pred, climatology_field, lat):
-    """
-    Calculate the spherical weighted anomaly correlation coefficient (ACC) between two arrays of atmospheric variables.
-    """
-    weights = spherical_weight(lat)
-    numerator = np.sum(weights * (y_true - climatology_field) * (y_pred - climatology_field))
-    denominator = np.sqrt(np.sum(weights * (y_true - climatology_field) ** 2) * np.sum(weights * (y_pred - climatology_field) ** 2))
-    acc = numerator / denominator
-    return acc

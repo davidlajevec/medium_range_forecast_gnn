@@ -13,12 +13,12 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "gcn2"
-BATCH_SIZE = 16
-EPOCHS = 1
+TRAINING_NAME = "gcn_24_edges"
+BATCH_SIZE = 8
+EPOCHS = 3
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 NUM_VARIABLES = len(VARIABLES)
-HIDDEN_CHANNELS = 32
+HIDDEN_CHANNELS = 128
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
@@ -26,7 +26,7 @@ PATIENCE = 3
 PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1950
+END_YEAR_TRAINING = 1970
 
 START_YEAR_VALIDATION = 2003
 END_YEAR_VALIDATION = 2006
@@ -52,7 +52,7 @@ optimizer = torch.optim.Adam(
 criterion = torch.nn.MSELoss()
 
 # Create edges and points
-edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
 
 # Define the scheduler
@@ -82,22 +82,6 @@ test_dataset = AtmosphericDataset(
 # Set the device to GPU if available, otherwise CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Train the model
-train(
-    model=model,
-    device=device,
-    epochs=EPOCHS,
-    training_dataset=training_dataset,
-    validation_dataset=validation_dataset,
-    batch_size=BATCH_SIZE,
-    optimizer=optimizer,
-    scheduler=scheduler,
-    criterion=criterion,
-    training_name=TRAINING_NAME,
-    patience=PATIENCE
-)
-
-
 training_parameters = {
     'epoch': EPOCHS,
     'batch_size': BATCH_SIZE,
@@ -113,6 +97,21 @@ training_parameters = {
     'start_year_test': START_YEAR_TEST,
     'end_year_test': END_YEAR_TEST,
 }
+
+# Train the model
+train(
+    model=model,
+    device=device,
+    epochs=EPOCHS,
+    training_dataset=training_dataset,
+    validation_dataset=validation_dataset,
+    batch_size=BATCH_SIZE,
+    optimizer=optimizer,
+    scheduler=scheduler,
+    criterion=criterion,
+    training_name=TRAINING_NAME,
+    patience=PATIENCE
+)
 
 with open(f"trained_models/{TRAINING_NAME}/training_parameters.json", "w") as f:
     json.dump(training_parameters, f)
