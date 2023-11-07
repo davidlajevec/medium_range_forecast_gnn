@@ -5,7 +5,7 @@ from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 import matplotlib.pyplot as plt
 from utils.mesh_creation import create_k_nearest_neighboors_edges
-from models import gcn
+from models import gcn, graph_unet
 from train import train
 from predict import predict
 import os
@@ -13,20 +13,20 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "gcn_24_edges"
+TRAINING_NAME = "unet"
 BATCH_SIZE = 8
-EPOCHS = 3
+EPOCHS = 1
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 NUM_VARIABLES = len(VARIABLES)
-HIDDEN_CHANNELS = 128
-LR = 0.001
+HIDDEN_CHANNELS = 8
+LR = 0.0001
 GAMMA = 0.99
 PATIENCE = 3
 
-PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
+INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "batch"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1970
+END_YEAR_TRAINING = 1950
 
 START_YEAR_VALIDATION = 2003
 END_YEAR_VALIDATION = 2006
@@ -34,14 +34,21 @@ END_YEAR_VALIDATION = 2006
 START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
 
+PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 PLOT = False
+NUM_PREDICTIONS = 20
 
 # Define the model
-model = gcn.GCN(
-    in_channels=NUM_VARIABLES,
-    hidden_channels=HIDDEN_CHANNELS,
-    out_channels=NUM_VARIABLES,
-)
+#model = gcn.GCN(
+#    in_channels=NUM_VARIABLES,
+#    hidden_channels=HIDDEN_CHANNELS,
+#    out_channels=NUM_VARIABLES,
+#)
+model = graph_unet.GraphUNet(
+    in_channels=NUM_VARIABLES, 
+    hidden_channels=HIDDEN_CHANNELS, 
+    out_channels=NUM_VARIABLES, 
+    pool_ratios=[0.8, 0.8])
 
 # Define the optimizer and loss function
 optimizer = torch.optim.Adam(
@@ -52,7 +59,7 @@ optimizer = torch.optim.Adam(
 criterion = torch.nn.MSELoss()
 
 # Create edges and points
-edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
 
 # Define the scheduler
@@ -88,6 +95,7 @@ training_parameters = {
     'learning_rate': LR,
     'gamma': GAMMA,
     'patience': PATIENCE,
+    'input_graph_attributes': INPUT_GRAPH_ATTRIBUTES,
     'training_name': TRAINING_NAME,
     'variables': VARIABLES,
     'start_year_training': START_YEAR_TRAINING,
@@ -110,7 +118,8 @@ train(
     scheduler=scheduler,
     criterion=criterion,
     training_name=TRAINING_NAME,
-    patience=PATIENCE
+    patience=PATIENCE,
+    input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
 )
 
 with open(f"trained_models/{TRAINING_NAME}/training_parameters.json", "w") as f:
@@ -124,5 +133,7 @@ predict(
     device=device,
     dataset=test_dataset,
     forecast_length=10,
-    plot_index=0
+    plot_index=0,
+    num_predictions=NUM_PREDICTIONS,
+    input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
 )

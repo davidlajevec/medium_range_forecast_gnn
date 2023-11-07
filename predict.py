@@ -22,6 +22,7 @@ def predict(
     forecast_length,
     plot_index=0,
     num_predictions=None,
+    input_graph_attributes=["x", "edge_index", "edge_attributes", "batch"],
 ):
     num_variables = len(variables)
 
@@ -76,15 +77,19 @@ def predict(
                 print(f"Predicting {index}/{len(indices)}", end="\r")
             for i in range(1, forecast_length * 2 + 1):
                 data = dataset[index + i]
-                #data.to(device)
+                data.to(device)
                 if i == 1:
-                    y_pred = model(data.x, data.edge_index)
+                    data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
+                    y_pred = model(**data_mapping)
                     y_persistence_grid = data.x.view(60, 120, num_variables).cpu()
                     y_persistence_grid = dataset.unstandardize(
                         y_persistence_grid
                     ).numpy()
                 else:
-                    y_pred = model(y_pred, data.edge_index)
+                    prediction_data = data
+                    prediction_data.x = y_pred
+                    data_mapping = {attr:getattr(prediction_data, attr) for attr in input_graph_attributes}
+                    y_pred = model(**data_mapping)
                 y_pred_grid = y_pred.view(60, 120, num_variables).cpu()
                 y_pred_grid = dataset.unstandardize(y_pred_grid).numpy()
                 y_true_grid = data.y.view(60, 120, num_variables).cpu()
@@ -196,10 +201,10 @@ if __name__ == "__main__":
     PLOT = False
     PLOT_INDEX = 0
     NUM_PREDICTIONS = 120
-
+    INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "batch"]
     # load trained model
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "gcn2"
+    MODEL_NAME = "unet"
 
     edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
@@ -222,4 +227,5 @@ if __name__ == "__main__":
         FORECAST_LENGTH,
         plot_index=PLOT_INDEX,
         num_predictions=NUM_PREDICTIONS,
+        input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
     )

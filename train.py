@@ -12,7 +12,19 @@ import csv
 import json
 
 
-def train(model, device, epochs, training_dataset, validation_dataset, batch_size, optimizer, scheduler, criterion, training_name, patience):
+def train(
+        model, 
+        device, 
+        epochs, 
+        training_dataset, 
+        validation_dataset, 
+        batch_size, 
+        optimizer, 
+        scheduler, 
+        criterion, 
+        training_name, 
+        patience, 
+        input_graph_attributes=["x", "edge_index"]):
     saving_path = "trained_models/" + training_name
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
@@ -52,7 +64,8 @@ def train(model, device, epochs, training_dataset, validation_dataset, batch_siz
             optimizer.zero_grad()
 
             # Make prediction and calculate loss
-            y_pred = model(data.x, data.edge_index)
+            data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
+            y_pred = model(**data_mapping)
             y = data.y
             loss = criterion(y_pred, y)
             training_loss += loss.item()
@@ -72,7 +85,8 @@ def train(model, device, epochs, training_dataset, validation_dataset, batch_siz
         for i, data in enumerate(validation_dataloader):
             data.to(device)
             # Make prediction and calculate loss
-            y_pred = model(data.x, data.edge_index)
+            data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
+            y_pred = model(**data_mapping)
             y = data.y
             loss += criterion(y_pred, y).item()
         val_loss = loss / len(validation_dataloader)
@@ -83,7 +97,8 @@ def train(model, device, epochs, training_dataset, validation_dataset, batch_siz
             best_val_loss = val_loss
             early_stop_counter = 0
             # Trace model
-            traced_model = torch.jit.trace(model, (data.x, data.edge_index))
+            data_tuple = tuple(getattr(data, attr) for attr in input_graph_attributes)
+            traced_model = torch.jit.trace(model, data_tuple)
             torch.jit.save(traced_model, f"{saving_path}/traced_model.pt")
             print("Model saved!")
         else:
@@ -177,5 +192,6 @@ if __name__=="__main__":
         scheduler=scheduler,
         criterion=criterion,
         training_name=TRAINING_NAME,
-        patience=PATIENCE
+        patience=PATIENCE,
+        input_graph_attributes=["x", "edge_index"],
     )
