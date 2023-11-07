@@ -2,8 +2,11 @@ import plotly.graph_objects as go
 import numpy as np
 import scipy.sparse as sp
 from mesh_creation import create_k_nearest_neighboors_edges
+#from mesh_creation2 import create_8_neighboors_edges
 
 edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=12)
+#edge_index, edge_attrs, points = create_8_neighboors_edges(radius=1)
+
 
 # Create a sphere
 phi, theta = np.linspace(0, np.pi, 20), np.linspace(0, 2*np.pi, 20)
