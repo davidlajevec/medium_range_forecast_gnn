@@ -11,24 +11,44 @@ import os
 import csv
 import json
 
-
 def train(
-        model, 
-        device, 
-        epochs, 
-        training_dataset, 
-        validation_dataset, 
-        batch_size, 
-        optimizer, 
-        scheduler, 
-        criterion, 
-        training_name, 
-        patience, 
-        input_graph_attributes=["x", "edge_index"]):
+    model,
+    device,
+    epochs,
+    training_dataset,
+    validation_dataset,
+    batch_size,
+    optimizer,
+    scheduler,
+    criterion,
+    training_name,
+    patience,
+    input_graph_attributes=["x", "edge_index"],
+):
+    """
+    Trains a given PyTorch Geometric model on a training dataset and validates it on a validation dataset.
+
+    Args:
+        model (torch.nn.Module): The PyTorch Geometric model to train.
+        device (torch.device): The device to train the model on.
+        epochs (int): The number of epochs to train the model for.
+        training_dataset (torch_geometric.data.Dataset): The training dataset.
+        validation_dataset (torch_geometric.data.Dataset): The validation dataset.
+        batch_size (int): The batch size to use for training and validation.
+        optimizer (torch.optim.Optimizer): The optimizer to use for training.
+        scheduler (torch.optim.lr_scheduler._LRScheduler): The learning rate scheduler to use for training.
+        criterion (torch.nn.Module): The loss function to use for training and validation.
+        training_name (str): The name of the training run. Used to save the trained model and training statistics.
+        patience (int): The number of epochs to wait for validation loss improvement before early stopping.
+        input_graph_attributes (list, optional): The list of input graph attributes to use for the model. Defaults to ["x", "edge_index"].
+
+    Returns:
+        None
+    """
     saving_path = "trained_models/" + training_name
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
-    
+
     print(f"Training on: {device}")
     print(f"Model name: {training_name}")
     model.to(device)
@@ -39,7 +59,9 @@ def train(
     training_losses = []
     validation_losses = []
 
-    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
+    training_dataloader = DataLoader(
+        training_dataset, batch_size=batch_size, shuffle=True
+    )
     validation_dataloader = DataLoader(
         validation_dataset, batch_size=batch_size, shuffle=True
     )
@@ -49,22 +71,24 @@ def train(
         file.write(str(training_dataset[0].edge_index.tolist()))
     try:
         with open(f"{saving_path}/edge_attr.txt", mode="w") as file:
-            file.write(str(training_dataset[0].edge_attr.tolist()))  
+            file.write(str(training_dataset[0].edge_attr.tolist()))
     except:
         pass
-    
+
     # Train the model for the specified number of epochs
     for epoch in range(epochs):
         print("-" * 50)
         print(f"Epoch: {epoch+1:03d}/{epochs}")
         training_loss = 0
         model.train()
-        for i, data in enumerate(training_dataloader):                
+        for i, data in enumerate(training_dataloader):
             data.to(device)
             optimizer.zero_grad()
 
             # Make prediction and calculate loss
-            data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
+            data_mapping = {
+                attr: getattr(data, attr) for attr in input_graph_attributes
+            }
             y_pred = model(**data_mapping)
             y = data.y
             loss = criterion(y_pred, y)
@@ -85,7 +109,9 @@ def train(
         for i, data in enumerate(validation_dataloader):
             data.to(device)
             # Make prediction and calculate loss
-            data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
+            data_mapping = {
+                attr: getattr(data, attr) for attr in input_graph_attributes
+            }
             y_pred = model(**data_mapping)
             y = data.y
             loss += criterion(y_pred, y).item()
@@ -104,9 +130,10 @@ def train(
         else:
             early_stop_counter += 1
             if early_stop_counter >= patience:
-                print(f"Validation loss did not improve for {patience} epochs. Stopping early.")
+                print(
+                    f"Validation loss did not improve for {patience} epochs. Stopping early."
+                )
                 break
-
 
         # Save training and validation losses to a CSV file
         training_losses.append(training_loss / len(training_dataloader))
@@ -127,7 +154,8 @@ def train(
         plt.legend()
         plt.savefig(f"{saving_path}/training_losses_plot.png")
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     # Define constants
     TRAINING_NAME = "gcn1"
     BATCH_SIZE = 16
@@ -150,10 +178,10 @@ if __name__=="__main__":
 
     # Define the optimizer and loss function
     optimizer = torch.optim.Adam(
-        model.parameters(), 
+        model.parameters(),
         lr=LR,
-        )
-    
+    )
+
     criterion = torch.nn.MSELoss()
 
     # Create edges and points

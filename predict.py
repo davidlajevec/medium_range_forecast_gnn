@@ -24,6 +24,36 @@ def predict(
     num_predictions=None,
     input_graph_attributes=["x", "edge_index", "edge_attributes", "batch"],
 ):
+    """
+    Predicts atmospheric variables using a trained GNN model.
+
+    Args:
+        model_name (str): Name of the trained model.
+        plot (bool): Whether to plot the predicted atmospheric fields.
+        variables (list): List of atmospheric variables to predict.
+        projections (list): List of projections to use for plotting.
+        device (str): Device to use for prediction.
+        dataset (AtmosphericFieldDataset): Dataset to use for prediction.
+        forecast_length (int): Length of the forecast in hours.
+        plot_index (int, optional): Index of the prediction to plot. Defaults to 0.
+        num_predictions (int, optional): Number of predictions to make. Defaults to None.
+        input_graph_attributes (list, optional): List of input graph attributes. Defaults to ["x", "edge_index", "edge_attributes", "batch"].
+
+    Returns:
+        None
+    """
+def predict(
+    model_name,
+    plot,
+    variables,
+    projections,
+    device,
+    dataset,
+    forecast_length,
+    plot_index=0,
+    num_predictions=None,
+    input_graph_attributes=["x", "edge_index", "edge_attributes", "batch"],
+):
     num_variables = len(variables)
 
     if not os.path.exists(f"trained_models/{model_name}/forecast_plot"):
@@ -201,10 +231,10 @@ if __name__ == "__main__":
     PLOT = False
     PLOT_INDEX = 0
     NUM_PREDICTIONS = 120
-    INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "batch"]
+    INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index"]
     # load trained model
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "unet"
+    MODEL_NAME = "gcn"
 
     edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
