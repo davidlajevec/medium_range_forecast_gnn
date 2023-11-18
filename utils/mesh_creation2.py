@@ -31,31 +31,36 @@ def create_8_neighboors_edges(radius=1):
     # Compute pairwise distances between points
     dists = cdist(points, points)
 
+    num_points = len(points)
+    num_phi = len(np.unique(phi))
+
     # Find the indices of eight neighbors for each point
     indices = []
     for i in range(len(points)):
         neighbors = []
 
         # Diagonal neighbors
-        if i % 2 == 0:  # Even rows
-            neighbors.extend([i - 1, i + 1, i - 12, i - 11, i + 12, i + 13])
-        else:  # Odd rows
-            neighbors.extend([i - 1, i + 1, i - 12, i - 13, i + 12, i + 11])
+        if i % num_phi == 0:  # First phi column
+            neighbors.extend([i + num_phi - 1, i + 1, i + num_points - num_phi - 1, i + num_points - num_phi, i + num_points - 1, i + num_points])
+        elif (i + 1) % num_phi == 0:  # Last phi column
+            neighbors.extend([i - 1, i - num_phi + 1, i - num_points + num_phi - 1, i - num_points + num_phi, i - num_points - 1, i - num_points])
+        else:
+            neighbors.extend([i - 1, i + 1, i - num_phi + 1, i - num_phi, i + num_phi - 1, i + num_phi])
 
         # Up and down neighbors
-        neighbors.extend([i - 12, i + 12])
+        if i >= num_phi:
+            neighbors.extend([i - num_phi, i + num_phi])
 
-        # Remove invalid neighbors (out of bounds)
-        valid_neighbors = [n for n in neighbors if 0 <= n < len(points)]
-
-        indices.append(valid_neighbors)
+        indices.append(neighbors)
 
     # Create edge_index and edge_attrs
     row = []
     col = []
     for i, neighbor_indices in enumerate(indices):
-        row.extend([i] * len(neighbor_indices))
-        col.extend(neighbor_indices)
+        for neighbor_index in neighbor_indices:
+            if neighbor_index < num_points:
+                row.append(i)
+                col.append(neighbor_index)
 
     edge_index = np.vstack((row, col))
     edge_attrs = dists[row, col]
@@ -64,5 +69,5 @@ def create_8_neighboors_edges(radius=1):
 
 
 if __name__ == "__main__":
-    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=4)
+    edge_index, edge_attrs, points = create_8_neighboors_edges(radius=1)
     print(edge_index.shape)
