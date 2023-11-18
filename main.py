@@ -1,3 +1,15 @@
+"""
+This script trains a Graph Convolutional Network (GCN) to perform medium-range weather forecasting.
+
+The GCN is trained on atmospheric data from the ERA5 reanalysis dataset, and the training and validation datasets are loaded using the AtmosphericDataset class.
+
+The GCN is defined in the gcn module, and the training is performed using the train function.
+
+The trained model is saved to disk, and the predict function is used to generate weather forecasts using the trained model.
+
+The forecasts are plotted using the matplotlib library.
+"""
+
 import torch
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
@@ -13,20 +25,20 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "unet"
+TRAINING_NAME = "gcn24"
 BATCH_SIZE = 8
-EPOCHS = 1
+EPOCHS = 5
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 NUM_VARIABLES = len(VARIABLES)
-HIDDEN_CHANNELS = 8
-LR = 0.0001
+HIDDEN_CHANNELS = 32
+LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
 
-INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "batch"]
+INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1950
+END_YEAR_TRAINING = 1970
 
 START_YEAR_VALIDATION = 2003
 END_YEAR_VALIDATION = 2006
@@ -39,16 +51,11 @@ PLOT = False
 NUM_PREDICTIONS = 20
 
 # Define the model
-#model = gcn.GCN(
-#    in_channels=NUM_VARIABLES,
-#    hidden_channels=HIDDEN_CHANNELS,
-#    out_channels=NUM_VARIABLES,
-#)
-model = graph_unet.GraphUNet(
-    in_channels=NUM_VARIABLES, 
-    hidden_channels=HIDDEN_CHANNELS, 
-    out_channels=NUM_VARIABLES, 
-    pool_ratios=[0.8, 0.8])
+model = gcn.GCN(
+    in_channels=NUM_VARIABLES,
+    hidden_channels=HIDDEN_CHANNELS,
+    out_channels=NUM_VARIABLES,
+)
 
 # Define the optimizer and loss function
 optimizer = torch.optim.Adam(
@@ -59,7 +66,7 @@ optimizer = torch.optim.Adam(
 criterion = torch.nn.MSELoss()
 
 # Create edges and points
-edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
 
 # Define the scheduler
@@ -122,9 +129,11 @@ train(
     input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
 )
 
+# Save training parameters to disk
 with open(f"trained_models/{TRAINING_NAME}/training_parameters.json", "w") as f:
     json.dump(training_parameters, f)
 
+# Generate weather forecasts using the trained model
 predict(
     TRAINING_NAME,
     plot=PLOT,

@@ -2,6 +2,8 @@ import torch
 from torch_geometric.nn import GCNConv, TopKPooling, global_mean_pool as gap
 from torch_geometric.utils import to_dense_batch, to_dense_adj
 
+## neki ne dela tuki kul vrjetn
+
 class GraphUNet(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, pool_ratios):
         super(GraphUNet, self).__init__()
