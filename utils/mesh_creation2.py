@@ -39,17 +39,23 @@ def create_8_neighboors_edges(radius=1):
     for i in range(len(points)):
         neighbors = []
 
-        # Diagonal neighbors
-        if i % num_phi == 0:  # First phi column
-            neighbors.extend([i + num_phi - 1, i + 1, i + num_points - num_phi - 1, i + num_points - num_phi, i + num_points - 1, i + num_points])
-        elif (i + 1) % num_phi == 0:  # Last phi column
-            neighbors.extend([i - 1, i - num_phi + 1, i - num_points + num_phi - 1, i - num_points + num_phi, i - num_points - 1, i - num_points])
+        # Special handling for poles
+        if i < num_phi:  # North pole
+            neighbors.extend([j for j in range(num_phi, 2*num_phi)])  # Connect to the next latitude
+        elif i >= num_points - num_phi:  # South pole
+            neighbors.extend([j for j in range(num_points - 2*num_phi, num_points - num_phi)])  # Connect to the previous latitude
         else:
-            neighbors.extend([i - 1, i + 1, i - num_phi + 1, i - num_phi, i + num_phi - 1, i + num_phi])
+            # Diagonal neighbors
+            if i % num_phi == 0:  # First phi column
+                neighbors.extend([i + num_phi - 1, i + 1, i + num_points - num_phi - 1, i + num_points - num_phi, i + num_points - 1, i + num_points])
+            elif (i + 1) % num_phi == 0:  # Last phi column
+                neighbors.extend([i - 1, i - num_phi + 1, i - num_points + num_phi - 1, i - num_points + num_phi, i - num_points - 1, i - num_points])
+            else:
+                neighbors.extend([i - 1, i + 1, i - num_phi + 1, i - num_phi, i + num_phi - 1, i + num_phi])
 
-        # Up and down neighbors
-        if i >= num_phi:
-            neighbors.extend([i - num_phi, i + num_phi])
+            # Up and down neighbors
+            if i >= num_phi:
+                neighbors.extend([i - num_phi, i + num_phi])
 
         indices.append(neighbors)
 
