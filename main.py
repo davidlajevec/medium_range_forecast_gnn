@@ -17,7 +17,7 @@ from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 import matplotlib.pyplot as plt
 from utils.mesh_creation import create_k_nearest_neighboors_edges
-from models import gcn, graph_unet
+from models import gcn, graph_unet,gcn_localEmb
 from train import train
 from predict import predict
 import os
@@ -25,7 +25,7 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "gcn24"
+TRAINING_NAME = "gcn_localEmb"
 BATCH_SIZE = 8
 EPOCHS = 5
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
@@ -50,11 +50,19 @@ PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 PLOT = False
 NUM_PREDICTIONS = 20
 
+# # Define the model
+# model = gcn.GCN(
+#     in_channels=NUM_VARIABLES,
+#     hidden_channels=HIDDEN_CHANNELS,
+#     out_channels=NUM_VARIABLES,
+# )
+
 # Define the model
-model = gcn.GCN(
-    in_channels=NUM_VARIABLES,
-    hidden_channels=HIDDEN_CHANNELS,
-    out_channels=NUM_VARIABLES,
+model = gcn_localEmb.CustomGraphNetwork(
+    node_in_features=NUM_VARIABLES, 
+    edge_in_features=1, 
+    hidden_channels=HIDDEN_CHANNELS, 
+    out_features=NUM_VARIABLES
 )
 
 # Define the optimizer and loss function
