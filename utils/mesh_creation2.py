@@ -76,4 +76,5 @@ def create_8_neighboors_edges(radius=1):
 
 if __name__ == "__main__":
     edge_index, edge_attrs, points = create_8_neighboors_edges(radius=1)
-    print(edge_index.shape)
+    #print(edge_index.shape)
+    print(edge_index)
