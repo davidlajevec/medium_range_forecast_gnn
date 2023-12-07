@@ -23,7 +23,7 @@ def train(
     criterion,
     training_name,
     patience,
-    input_graph_attributes=["x", "edge_index"],
+    input_graph_attributes=["x", "edge_index", "edge_attr"],
 ):
     """
     Trains a given PyTorch Geometric model on a training dataset and validates it on a validation dataset.

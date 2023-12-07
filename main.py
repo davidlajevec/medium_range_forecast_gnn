@@ -16,8 +16,8 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 import matplotlib.pyplot as plt
-from utils.mesh_creation import create_k_nearest_neighboors_edges
-from models import gcn, graph_unet,gcn_localEmb
+from utils.mesh_creation_indexed import create_neighbooring_edges
+from models.LocallyEmbedded import GNN
 from train import train
 from predict import predict
 import os
@@ -25,7 +25,7 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "gcn_localEmb"
+TRAINING_NAME = "locally_embedded_test"
 BATCH_SIZE = 8
 EPOCHS = 5
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
@@ -35,7 +35,7 @@ LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
 
-INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index"]
+INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
 START_YEAR_TRAINING = 1950
 END_YEAR_TRAINING = 1970
@@ -50,17 +50,10 @@ PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 PLOT = False
 NUM_PREDICTIONS = 20
 
-# # Define the model
-# model = gcn.GCN(
-#     in_channels=NUM_VARIABLES,
-#     hidden_channels=HIDDEN_CHANNELS,
-#     out_channels=NUM_VARIABLES,
-# )
-
 # Define the model
-model = gcn_localEmb.CustomGraphNetwork(
+model = GNN(
     node_in_features=NUM_VARIABLES, 
-    edge_in_features=1, 
+    edge_in_features=3, 
     hidden_channels=HIDDEN_CHANNELS, 
     out_features=NUM_VARIABLES
 )
@@ -74,8 +67,9 @@ optimizer = torch.optim.Adam(
 criterion = torch.nn.MSELoss()
 
 # Create edges and points
-edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=24)
+edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
+edge_attrs = torch.tensor(edge_attrs.T, dtype=torch.float)
 
 # Define the scheduler
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
@@ -83,12 +77,14 @@ scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
 # Load the training and validation datasets
 training_dataset = AtmosphericDataset(
     edge_index=edge_index,
+    edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
     start_year=START_YEAR_TRAINING,
     end_year=END_YEAR_TRAINING,
 )
 validation_dataset = AtmosphericDataset(
     edge_index=edge_index,
+    edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
     start_year=START_YEAR_VALIDATION,
     end_year=END_YEAR_VALIDATION,
@@ -96,6 +92,7 @@ validation_dataset = AtmosphericDataset(
 
 test_dataset = AtmosphericDataset(
     edge_index=edge_index,
+    edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
     start_year=START_YEAR_TEST,
     end_year=END_YEAR_TEST,
