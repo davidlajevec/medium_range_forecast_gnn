@@ -3,16 +3,15 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mesh_creation_indexed import create_neighbooring_edges
 
-PLOT_EDGE_INDEX = 7200-120 + 0
-K = 2
-SHOW = False
+PLOT_EDGE_INDEX = 3600
+K = 1
+SHOW = True
 
 edge_index, edge_attrs, points, points_theta_phi = create_neighbooring_edges(k=K)
 
 x_data = points[:, 0]
 y_data = points[:, 1]
 z_data = points[:, 2]
-
 
 # Replace the Plotly code with Matplotlib code
 fig = plt.figure()
