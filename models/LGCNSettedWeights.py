@@ -25,8 +25,14 @@ class GNN(nn.Module):
         x2 = self.layer2(x1, edge_index, edge_attr)
 
         x3 = self.layer3(x2, edge_index, edge_attr)
+
+        x4 = self.layer4(x3, edge_index, edge_attr)
+
+        x5 = self.layer4(x4, edge_index, edge_attr)
     
-        x = self.layer_last(x3, edge_index, edge_attr)
+        x_skip = x1 + x2/2. + x3/3. + x4/4. + x5/5.
+
+        x = self.layer_last(x_skip, edge_index, edge_attr)
 
         return x
 

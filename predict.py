@@ -1,6 +1,6 @@
 import torch
 from datasets.atmospheric_dataset import AtmosphericDataset
-from utils.mesh_creation import create_k_nearest_neighboors_edges
+from utils.mesh_creation_indexed import create_neighbooring_edges
 from utils.plot_atmospheric_field import plot_true_and_predicted_atomspheric_field
 from utils.utils import filename_to_climatology
 from utils.metrics import spherical_weighted_rmse, spherical_weighted_acc
@@ -177,7 +177,7 @@ def predict(
                                 right_title="Predicted",
                                 projection=eval(projection),
                                 title=dataset.file_names[0][i][-17:-4]
-                                + f" {variable} {12*(i+1)}h forecast",
+                                + f" {variable} {12*i}h forecast",
                             )
 
         days = [i / 2 for i in range(forecast_length * 2 + 1)]
@@ -228,19 +228,22 @@ def predict(
 if __name__ == "__main__":
     FORECAST_LENGTH = 14  # days
     PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
-    PLOT = False
+    PLOT = True
     PLOT_INDEX = 0
-    NUM_PREDICTIONS = 120
-    INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index"]
+    NUM_PREDICTIONS = 20
+    INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
     # load trained model
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "gcn"
+    MODEL_NAME = "locally_embedded_test"
 
-    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+    edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
+    edge_attrs = torch.tensor(edge_attrs.T, dtype=torch.float)
+
     # load data to be predicted
     dataset = AtmosphericDataset(
         edge_index=edge_index,
+        edge_attributes=edge_attrs,
         atmosphere_variables=VARIABLES,
         start_year=2019,
         end_year=2019,

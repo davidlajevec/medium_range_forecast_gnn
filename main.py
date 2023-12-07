@@ -25,12 +25,12 @@ import csv
 import json
 
 # Define constants
-TRAINING_NAME = "locally_embedded_test"
+TRAINING_NAME = "locally_embedded"
 BATCH_SIZE = 8
 EPOCHS = 5
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 NUM_VARIABLES = len(VARIABLES)
-HIDDEN_CHANNELS = 32
+HIDDEN_CHANNELS = 64
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
@@ -47,7 +47,7 @@ START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
 
 PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
-PLOT = False
+PLOT = True
 NUM_PREDICTIONS = 20
 
 # Define the model
