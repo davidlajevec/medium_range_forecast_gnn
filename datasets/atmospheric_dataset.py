@@ -11,6 +11,7 @@ class AtmosphericDataset(torch.utils.data.Dataset):
         edge_attributes=None,
         root="data_12hr",
         atmosphere_variables=["geopotential_500"],
+        static_fields=["land_sea_mask", "latitudes", "surface_topography"],
         start_year=1950,
         end_year=2008,
     ):
@@ -22,6 +23,7 @@ class AtmosphericDataset(torch.utils.data.Dataset):
             annotations = f.readlines()
 
         self.atmosphere_variables = atmosphere_variables
+        self.static_fields = static_fields
 
         phi = np.rad2deg(np.arange(0, 2 * np.pi + np.deg2rad(3), np.deg2rad(3)))
         theta = 88.5 - np.arange(0, 180, 3)
@@ -54,10 +56,12 @@ class AtmosphericDataset(torch.utils.data.Dataset):
         return len(self.file_names[0])-1
     
     def standardize(self, x):
-        return (x - self.mean_fields) / self.std_fields
+        x[:, :, :len(self.atmosphere_variables)] = (x[:, :, :len(self.atmosphere_variables)] - self.mean_fields) / self.std_fields
+        return x
     
     def unstandardize(self, x):
-        return x * self.std_fields + self.mean_fields
+        x[:, :, :len(self.atmosphere_variables)] = x[:, :, :len(self.atmosphere_variables)] * self.std_fields + self.mean_fields
+        return x
 
     def process(self, idx):
         data_x, data_y = [], []
@@ -66,9 +70,13 @@ class AtmosphericDataset(torch.utils.data.Dataset):
             variable_data_y = np.load(f"{self.root}/{self.file_names[i][idx+1]}")
             data_x.append(torch.from_numpy(variable_data_x).to(torch.float))
             data_y.append(torch.from_numpy(variable_data_y).to(torch.float))
+
+        for field in self.static_fields:
+            static_field = np.load(f"{self.root}/static_fields/{field}.npy")
+            data_x.append(torch.from_numpy(static_field).to(torch.float))
         
         x = torch.stack(data_x, dim=2)
-        x = self.standardize(x).view(-1, len(self.atmosphere_variables))
+        x = self.standardize(x).view(-1, len(self.atmosphere_variables)+len(self.static_fields))
         y = torch.stack(data_y, dim=2)
         y = self.standardize(y).view(-1, len(self.atmosphere_variables))
         
@@ -86,34 +94,37 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append(os.getcwd())
-    from utils.mesh_creation import create_k_nearest_neighboors_edges
+    from utils.mesh_creation_indexed import create_neighbooring_edges
     from utils.plot_atmospheric_field import (
         plot_atmospheric_field,
         plot_true_and_predicted_atomspheric_field,
     )
     import cartopy.crs as ccrs
 
-    edge_index, edge_attr, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+    edge_index, edge_attr, points_xyz, points_theta_phi = create_neighbooring_edges(k=1)
 
     dataset = AtmosphericDataset(
         root="data_12hr",
         edge_index=edge_index,
         edge_attributes=edge_attr,
         atmosphere_variables=["geopotential_500", "u_500", "v_500"],
+        static_fields=["land_sea_mask", "surface_topography"],
         start_year=1950,
         end_year=2008,
     )
     #x = dataset.__getitem__(0).x.view(60, 120, 3)[:, :, 0]
-    y = dataset.unstandardize(dataset.__getitem__(0).y.view(60, 120, 3))[:, :, 0]
-    x = dataset.unstandardize(dataset.__getitem__(1).x.view(60, 120, 3))[:, :, 0]
+    x = dataset.unstandardize(dataset.__getitem__(1).x.view(60, 120, 5))[:, :, 4]
+    y = dataset.unstandardize(dataset.__getitem__(0).y.view(60, 120, 3))[:, :, 2]
 
     plot_true_and_predicted_atomspheric_field(
         x,
-        y,
+        x,
         show=True,
-        show_colorbar=False,
-        x_title="Longitude",
-        y_title="Latitude",
+        show_colorbar=True,
+        save=True,
+        save_path="test.png",
+        left_title="Longitude",
+        right_title="Latitude",
         title="Geopotential 500 hPa",
         projection=ccrs.Robinson(),
         cmap="nipy_spectral",

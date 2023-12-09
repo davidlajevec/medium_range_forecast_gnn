@@ -186,7 +186,6 @@ def add_k2_south_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
         ## South pole
 
         # Latitudinal neighbors
-
         edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-2])
         edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-2))
 
@@ -264,7 +263,7 @@ def create_neighbooring_edges(k = 1):
         print("Not implemented yet!")
 
     edge_index = np.array(edge_index).T
-    edge_attrs = np.array(edge_attrs).T
+    edge_attrs = np.array(edge_attrs)
     return edge_index, edge_attrs, points_xyz, points_theta_phi
 
 

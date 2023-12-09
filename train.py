@@ -3,9 +3,8 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
-from datasets.atmospheric_dataset import AtmosphericDataset
+
 import matplotlib.pyplot as plt
-from models import gcn
 import os
 import csv
 import json
@@ -120,12 +119,8 @@ def train(
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             early_stop_counter = 0
-            # Trace model
-            data_tuple = tuple(getattr(data, attr) for attr in input_graph_attributes)
-            traced_model = torch.jit.trace(model, data_tuple)
-            torch.jit.save(traced_model, f"{saving_path}/traced_model.pt")
-            #scripted_model = torch.jit.script(model)
-            #torch.jit.save(scripted_model, f"{saving_path}/scripted_model.pt")
+            # Save model
+            torch.save(model, f"{saving_path}/model.pth")
             print("Model saved!")
         else:
             early_stop_counter += 1
@@ -156,12 +151,17 @@ def train(
 
 
 if __name__ == "__main__":
+    from datasets.atmospheric_dataset import AtmosphericDataset
+    from models.LGCNLearnedWeightsLayered import GNN
+    from utils.mesh_creation_indexed import create_neighbooring_edges
     # Define constants
-    TRAINING_NAME = "gcn1"
+    TRAINING_NAME = "train_test"
     BATCH_SIZE = 16
     EPOCHS = 1
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    NUM_VARIABLES = len(VARIABLES)
+    STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
+    NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
+    NUM_STATIC_FIELDS = len(STATIC_FIELDS)
     HIDDEN_CHANNELS = 32
     LR = 0.0005
     GAMMA = 0.9
@@ -170,10 +170,11 @@ if __name__ == "__main__":
     PATIENCE = 2
 
     # Define the model
-    model = gcn.GCN(
-        in_channels=NUM_VARIABLES,
+    model = GNN(
+        node_in_features=NUM_ATMOSPHERIC_VARIABLES+NUM_STATIC_FIELDS,
+        edge_in_features=3,
         hidden_channels=HIDDEN_CHANNELS,
-        out_channels=NUM_VARIABLES,
+        out_features=NUM_ATMOSPHERIC_VARIABLES,
     )
 
     # Define the optimizer and loss function
@@ -185,8 +186,9 @@ if __name__ == "__main__":
     criterion = torch.nn.MSELoss()
 
     # Create edges and points
-    edge_index, edge_attrs, points = create_k_nearest_neighboors_edges(radius=1, k=8)
+    edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
+    edge_attrs = torch.tensor(edge_attrs, dtype=torch.float)
 
     # Define the scheduler
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
@@ -195,12 +197,14 @@ if __name__ == "__main__":
     training_dataset = AtmosphericDataset(
         edge_index=edge_index,
         atmosphere_variables=VARIABLES,
+        static_fields=STATIC_FIELDS,
         start_year=START_YEAR_TRAINING,
         end_year=END_YEAR_TRAINING,
     )
     validation_dataset = AtmosphericDataset(
         edge_index=edge_index,
         atmosphere_variables=VARIABLES,
+        static_fields=STATIC_FIELDS,
         start_year=2003,
         end_year=2006,
     )
@@ -221,5 +225,5 @@ if __name__ == "__main__":
         criterion=criterion,
         training_name=TRAINING_NAME,
         patience=PATIENCE,
-        input_graph_attributes=["x", "edge_index"],
+        input_graph_attributes=["x", "edge_index", "edge_attr"],
     )

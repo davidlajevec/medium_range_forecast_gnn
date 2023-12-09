@@ -26,14 +26,16 @@ import csv
 import json
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.LGCNLearnedWeights import GNN
+from models.LGCNLearnedWeightsLayeredMore import GNN
 
 # Define constants
-TRAINING_NAME = "locally_embedded_learned_weights_64"
+TRAINING_NAME = "layerd_64_12_lay"
 BATCH_SIZE = 4
-EPOCHS = 5
+EPOCHS = 10
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
-NUM_VARIABLES = len(VARIABLES)
+STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
+NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
+NUM_STATIC_FIELDS = len(STATIC_FIELDS)
 HIDDEN_CHANNELS = 64
 LR = 0.001
 GAMMA = 0.99
@@ -42,10 +44,10 @@ PATIENCE = 3
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1960
+END_YEAR_TRAINING = 1970
 
 START_YEAR_VALIDATION = 2003
-END_YEAR_VALIDATION = 2005
+END_YEAR_VALIDATION = 2015
 
 START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
@@ -56,10 +58,10 @@ NUM_PREDICTIONS = 20
 
 # Define the model
 model = GNN(
-    node_in_features=NUM_VARIABLES, 
+    node_in_features=NUM_ATMOSPHERIC_VARIABLES + NUM_STATIC_FIELDS, 
     edge_in_features=3, 
     hidden_channels=HIDDEN_CHANNELS, 
-    out_features=NUM_VARIABLES
+    out_features=NUM_ATMOSPHERIC_VARIABLES,
 )
 
 # Define the optimizer and loss function
@@ -73,7 +75,7 @@ criterion = torch.nn.MSELoss()
 # Create edges and points
 edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
-edge_attrs = torch.tensor(edge_attrs.T, dtype=torch.float)
+edge_attrs = torch.tensor(edge_attrs, dtype=torch.float)
 
 # Define the scheduler
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=GAMMA)
@@ -83,6 +85,7 @@ training_dataset = AtmosphericDataset(
     edge_index=edge_index,
     edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
+    static_fields=STATIC_FIELDS,
     start_year=START_YEAR_TRAINING,
     end_year=END_YEAR_TRAINING,
 )
@@ -90,6 +93,7 @@ validation_dataset = AtmosphericDataset(
     edge_index=edge_index,
     edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
+    static_fields=STATIC_FIELDS,
     start_year=START_YEAR_VALIDATION,
     end_year=END_YEAR_VALIDATION,
 )
@@ -98,6 +102,7 @@ test_dataset = AtmosphericDataset(
     edge_index=edge_index,
     edge_attributes=edge_attrs,
     atmosphere_variables=VARIABLES,
+    static_fields=STATIC_FIELDS,
     start_year=START_YEAR_TEST,
     end_year=END_YEAR_TEST,
 )
@@ -147,6 +152,7 @@ predict(
     TRAINING_NAME,
     plot=PLOT,
     variables=VARIABLES,
+    static_fields=STATIC_FIELDS,
     projections=PROJECTIONS,
     device=device,
     dataset=test_dataset,

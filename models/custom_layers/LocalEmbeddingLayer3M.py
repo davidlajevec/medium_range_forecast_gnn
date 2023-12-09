@@ -8,7 +8,7 @@ from torch_scatter import scatter
 
 class CustomGraphLayer(MessagePassing):
     def __init__(self, in_channels, edge_in_channels, out_channels):
-        super(CustomGraphLayer, self).__init__(aggr='add')  # 'add' aggregation.
+        super(CustomGraphLayer, self).__init__()  
 
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
@@ -54,7 +54,7 @@ class CustomGraphLayer(MessagePassing):
         mean_aggr = scatter(inputs, index, dim=self.node_dim, reduce='mean')
         min_aggr = scatter(inputs, index, dim=self.node_dim, reduce='min')
         max_aggr = scatter(inputs, index, dim=self.node_dim, reduce='max')
-        return torch.cat([mean_aggr, max_aggr, min_aggr], dim=1)
+        return torch.cat([mean_aggr, max_aggr, min_aggr], dim=1)    
 
     def update(self, aggr_out: Tensor):
         return aggr_out

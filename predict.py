@@ -46,6 +46,7 @@ def predict(
     model_name,
     plot,
     variables,
+    static_fields,
     projections,
     device,
     dataset,
@@ -55,6 +56,7 @@ def predict(
     input_graph_attributes=["x", "edge_index", "edge_attributes", "batch"],
 ):
     num_variables = len(variables)
+    num_static_fields = len(static_fields)
 
     if not os.path.exists(f"trained_models/{model_name}/forecast_plot"):
         os.makedirs(f"trained_models/{model_name}/forecast_plot")
@@ -75,7 +77,8 @@ def predict(
         print("Num_predictions must be less than the length of the dataset!")
     else:
         indices = list(range(len(dataset) - forecast_length * 2))
-    model = torch.jit.load(f"trained_models/{model_name}/traced_model.pt")
+    #model = torch.jit.load(f"trained_models/{model_name}/traced_model.pt")
+    model = torch.load(f"trained_models/{model_name}/model.pth")
     with torch.no_grad():
         model.to(device)
         model.eval()
@@ -103,7 +106,7 @@ def predict(
             )
             acc_persistence[variable][:, 0] = 1
         for index in indices:
-            if index % 20 == 0:
+            if index % 5 == 0:
                 print(f"Predicting {index}/{len(indices)}", end="\r")
             for i in range(1, forecast_length * 2 + 1):
                 data = dataset[index + i]
@@ -111,13 +114,13 @@ def predict(
                 if i == 1:
                     data_mapping = {attr:getattr(data, attr) for attr in input_graph_attributes}
                     y_pred = model(**data_mapping)
-                    y_persistence_grid = data.x.view(60, 120, num_variables).cpu()
+                    y_persistence_grid = data.x.view(60, 120, num_variables+num_static_fields).cpu()[:, :, :num_variables]
                     y_persistence_grid = dataset.unstandardize(
                         y_persistence_grid
                     ).numpy()
                 else:
                     prediction_data = data
-                    prediction_data.x = y_pred
+                    prediction_data.x[:,:num_variables] = y_pred
                     data_mapping = {attr:getattr(prediction_data, attr) for attr in input_graph_attributes}
                     y_pred = model(**data_mapping)
                 y_pred_grid = y_pred.view(60, 120, num_variables).cpu()
