@@ -1,4 +1,4 @@
-from .custom_layers.CustomLocalEmbeddingLayer import CustomGraphLayer
+from .custom_layers.LocalEmbeddingLayer3M import CustomGraphLayer
 import torch
 import torch.nn as nn
 
@@ -25,8 +25,14 @@ class GNN(nn.Module):
         x2 = self.layer2(x1, edge_index, edge_attr)
 
         x3 = self.layer3(x2, edge_index, edge_attr)
+
+        x4 = self.layer4(x3, edge_index, edge_attr)
+
+        x5 = self.layer5(x4, edge_index, edge_attr)
     
-        x = self.layer_last(x3, edge_index, edge_attr)
+        x = x5 
+
+        x = self.layer_last(x5, edge_index, edge_attr)
 
         return x
 

@@ -13,22 +13,17 @@ class CustomGraphLayer(MessagePassing):
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
             nn.Linear(in_channels, out_channels),
-            nn.ReLU(),
-            nn.Linear(out_channels, out_channels)
+            nn.ReLU()
         )
 
         # Neural Network for first aggregation layer
         self.edge_nn = nn.Sequential(
             nn.Linear(out_channels + edge_in_channels, out_channels),
-            nn.ReLU(),
-            nn.Linear(out_channels, out_channels)
+            nn.ReLU()
         )
 
-        # Neural Network for second aggregation layer
         self.aggregate_nn = nn.Sequential(
-            nn.Linear(out_channels, out_channels),
-            nn.ReLU(),
-            nn.Linear(out_channels, out_channels)
+            nn.Linear(out_channels*3, out_channels)
         )
 
     def forward(self, x, edge_index, edge_attr):
@@ -56,7 +51,7 @@ class CustomGraphLayer(MessagePassing):
         return self.edge_nn(tmp)
 
     def aggregate(self, inputs: Tensor, index: Tensor, ptr: Tensor | None = None, dim_size: int | None = None) -> Tensor:
-        return scatter(inputs, index, dim=self.node_dim, reduce='sum')
-    
+        return scatter(inputs, index, dim=self.node_dim, reduce='mean')
+
     def update(self, aggr_out: Tensor):
         return aggr_out

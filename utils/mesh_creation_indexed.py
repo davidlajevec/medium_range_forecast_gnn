@@ -270,4 +270,11 @@ def create_neighbooring_edges(k = 1):
 
 if __name__ == "__main__": 
     edge_index, edge_attrs, points_xyz, points_theta_phi = create_neighbooring_edges(k=1)
-    print(edge_index.shape)
+    for i in range(60*120-1):
+        count = np.count_nonzero(edge_index[0] == i)
+        if count != 8:
+            print(i, count, 0)
+
+        count = np.count_nonzero(edge_index[1] == i)
+        if count != 8:
+            print(i, count, 1)

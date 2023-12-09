@@ -9,3 +9,4 @@ build/
 *.png
 trained_models/
 *.txt
+nohup.out

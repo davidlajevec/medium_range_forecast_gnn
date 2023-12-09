@@ -5,7 +5,6 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 import matplotlib.pyplot as plt
-from utils.mesh_creation import create_k_nearest_neighboors_edges
 from models import gcn
 import os
 import csv
@@ -84,7 +83,6 @@ def train(
         for i, data in enumerate(training_dataloader):
             data.to(device)
             optimizer.zero_grad()
-
             # Make prediction and calculate loss
             data_mapping = {
                 attr: getattr(data, attr) for attr in input_graph_attributes
@@ -126,6 +124,8 @@ def train(
             data_tuple = tuple(getattr(data, attr) for attr in input_graph_attributes)
             traced_model = torch.jit.trace(model, data_tuple)
             torch.jit.save(traced_model, f"{saving_path}/traced_model.pt")
+            #scripted_model = torch.jit.script(model)
+            #torch.jit.save(scripted_model, f"{saving_path}/scripted_model.pt")
             print("Model saved!")
         else:
             early_stop_counter += 1

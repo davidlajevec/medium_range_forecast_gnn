@@ -234,7 +234,7 @@ if __name__ == "__main__":
     INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
     # load trained model
     VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "locally_embedded_test"
+    MODEL_NAME = "locally_embedded"
 
     edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
     edge_index = torch.tensor(edge_index, dtype=torch.long)

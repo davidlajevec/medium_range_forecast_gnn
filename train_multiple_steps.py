@@ -5,7 +5,6 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 import matplotlib.pyplot as plt
-from utils.mesh_creation import create_k_nearest_neighboors_edges
 from models import gcn
 import os
 import csv
