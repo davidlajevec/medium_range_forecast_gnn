@@ -8,3 +8,4 @@ build/
 *.pt
 *.png
 trained_models/
+*.txt

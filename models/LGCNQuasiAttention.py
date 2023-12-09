@@ -15,7 +15,7 @@ class GNN(nn.Module):
         self.layer6 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
         self.layer7 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
 
-        self.concat_layer = CustomGraphLayer(hidden_channels * 7, edge_in_features, hidden_channels)
+        self.concat_layer = CustomGraphLayer(hidden_channels * 3, edge_in_features, hidden_channels)
 
         self.layer_last = CustomGraphLayer(hidden_channels, edge_in_features, out_features)
 
@@ -27,15 +27,15 @@ class GNN(nn.Module):
 
         x3 = self.layer3(x2, edge_index, edge_attr)
 
-        x4 = self.layer4(x3, edge_index, edge_attr)
+        #x4 = self.layer4(x3, edge_index, edge_attr)
 
-        x5 = self.layer5(x4, edge_index, edge_attr)
+        #x5 = self.layer5(x4, edge_index, edge_attr)
 
-        x6 = self.layer6(x5, edge_index, edge_attr)
+        #x6 = self.layer6(x5, edge_index, edge_attr)
 
-        x7 = self.layer7(x6, edge_index, edge_attr)
+        #x7 = self.layer7(x6, edge_index, edge_attr)
     
-        x_concat = torch.cat((x1, x2, x3, x4, x5, x6, x7), dim=1)
+        x_concat = torch.cat((x1, x2, x3), dim=1)
 
         x = self.concat_layer(x_concat, edge_index, edge_attr)
 

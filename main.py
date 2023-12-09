@@ -14,23 +14,25 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
-from datasets.atmospheric_dataset import AtmosphericDataset
+#from datasets.atmospheric_dataset import AtmosphericDataset
+from datasets.atmospheric_dataset_steps import AtmosphericDataset
 import matplotlib.pyplot as plt
 from utils.mesh_creation_indexed import create_neighbooring_edges
 from models.LocallyEmbedded import GNN
-from train import train
+#from train import train
+from train_multiple_steps import train
 from predict import predict
 import os
 import csv
 import json
 
 # Define constants
-TRAINING_NAME = "locally_embedded"
+TRAINING_NAME = "multisteps"
 BATCH_SIZE = 8
-EPOCHS = 5
+EPOCHS = 1
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 NUM_VARIABLES = len(VARIABLES)
-HIDDEN_CHANNELS = 64
+HIDDEN_CHANNELS = 32
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
@@ -38,10 +40,10 @@ PATIENCE = 3
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1970
+END_YEAR_TRAINING = 1950
 
 START_YEAR_VALIDATION = 2003
-END_YEAR_VALIDATION = 2006
+END_YEAR_VALIDATION = 2004
 
 START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
