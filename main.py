@@ -27,10 +27,11 @@ import csv
 import json
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.LGCNLearnedWeightsLayered8 import GNN
+#from models.LGCNLearnedWeightsLayered8 import GNN
+from models.LGCNLearnedWeightsLayered5 import GNN
 
 # Define constants
-TRAINING_NAME = "layerd_128_leaky_relu"
+TRAINING_NAME = "layerd5_128_k2"
 BATCH_SIZE = 4
 EPOCHS = 10
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
@@ -41,6 +42,8 @@ HIDDEN_CHANNELS = 128
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
+NON_LINEARITY = nn.ReLU()
+K = 2
 
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
@@ -63,7 +66,7 @@ model = GNN(
     edge_in_features=3, 
     hidden_channels=HIDDEN_CHANNELS, 
     out_features=NUM_ATMOSPHERIC_VARIABLES,
-    non_linearity=nn.LeakyReLU(0.1),
+    non_linearity=NON_LINEARITY,
 )
 
 # Define the optimizer and loss function
@@ -75,7 +78,7 @@ optimizer = torch.optim.Adam(
 criterion = torch.nn.MSELoss()
 
 # Create edges and points
-edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
+edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=K)
 edge_index = torch.tensor(edge_index, dtype=torch.long)
 edge_attrs = torch.tensor(edge_attrs, dtype=torch.float)
 
@@ -118,9 +121,13 @@ training_parameters = {
     'learning_rate': LR,
     'gamma': GAMMA,
     'patience': PATIENCE,
+    'non_linearity': NON_LINEARITY,
+    'k': K,
+    'hidden_channels': HIDDEN_CHANNELS,
     'input_graph_attributes': INPUT_GRAPH_ATTRIBUTES,
     'training_name': TRAINING_NAME,
     'variables': VARIABLES,
+    'static_fields': STATIC_FIELDS,
     'start_year_training': START_YEAR_TRAINING,
     'end_year_training': END_YEAR_TRAINING,
     'start_year_validation': START_YEAR_VALIDATION,
