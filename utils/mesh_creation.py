@@ -20,7 +20,7 @@ def theta_angle_difference(theta1, theta2):
     return (theta1 - theta2)
 
 def over_the_top_neighbors(i, n, xdim=120):
-    return (np.linspace(0, xdim-1, n+2, dtype=int)[1:-1] + i ) % (xdim-1)
+    return (np.linspace(0, xdim-1, n+2, dtype=int)[1:-1] + i ) % xdim
 
 def calculate_edge_attribute(main_node_ind, neighbor_node_ind, points_theta_phi):
     d1 = spherical_distance(points_theta_phi[main_node_ind], points_theta_phi[neighbor_node_ind])
@@ -31,41 +31,27 @@ def calculate_edge_attribute(main_node_ind, neighbor_node_ind, points_theta_phi)
 def add_k1_north_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
     edge_index, edge_attrs = [], []
     for i in range(x_dim):
+        node_index = i
 
-        ## North pole 
+        neighbors = [
+            # Latitudinal neighbors
+            (i, (i - 1) % x_dim),  # Left
+            (i, (i + 1) % x_dim),  # Right
 
-        # Latitudinal neighbors
+            # Southern neighbors
+            (i, x_dim + (i - 1) % x_dim),  # LeftSouth
+            (i, i + x_dim),  # MiddleSouth
+            (i, x_dim + (i + 1) % x_dim),  # RightSouth
+        ]
 
-        edge_index.append([i, (i-1)%120])
-        edge_attrs.append(edge_attribute_assignment_fun(i, (i-1)%120))
-    
-        edge_index.append([i, (i+1)%120])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+1))
-
-        # Southern neighbors
-
-        # LeftSouth
-        if i == 0:
-            edge_index.append([i, i+2*x_dim-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i, i+2*x_dim-1))
-        else:
-            edge_index.append([i, i+x_dim-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i, i+x_dim-1))
-
-        # MiddleSouth
-        edge_index.append([i, i+x_dim])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+x_dim))
-
-        # RightSouth
-        if i == x_dim-1:
-            edge_index.append([i, (i+x_dim+1)%x_dim+x_dim])
-            edge_attrs.append(edge_attribute_assignment_fun(i, (i+x_dim+1)%x_dim+x_dim))
-        else:
-            edge_index.append([i, i+x_dim+1])
-            edge_attrs.append(edge_attribute_assignment_fun(i, i+x_dim+1))
+        for neighbor in neighbors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
 
         # Over the top neighbors
         ith_point_over_the_top_neighbors = over_the_top_neighbors(i, 3)
+
         for j in ith_point_over_the_top_neighbors:
             edge_index.append([i, j])
             edge_attrs.append(edge_attribute_assignment_fun(i, j))
@@ -75,43 +61,23 @@ def add_k1_north_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
 def add_k1_south_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
     edge_index, edge_attrs = [], []
     for i in range(x_dim):
-        ## South pole
-
-        # Latitudinal neighbors
-        if i == 0:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim)-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim)-1))
-        else:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-1))
+        node_index = i + x_dim * (y_dim - 1)
         
-        if i == x_dim-1:
-            edge_index.append([i+x_dim*(y_dim-1), (i+x_dim*(y_dim-1)+1)%x_dim + x_dim*(y_dim-1)])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), ((i+1)%x_dim+x_dim*(y_dim-1))%x_dim+x_dim*(y_dim-1)))
-        else:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)+1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), (i+1)%x_dim+x_dim*(y_dim-1)))
+        neighbors = [
+            # Latitudinal neighbors
+            (i + x_dim * (y_dim - 1), (i - 1) % x_dim + x_dim * (y_dim - 1)),  # Left
+            (i + x_dim * (y_dim - 1), (i + 1) % x_dim + x_dim * (y_dim - 1)),  # Right
 
-        # NorthLeft
-        if i == 0:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-1))
-        else:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-1))
+            # Northern neighbors
+            (i + x_dim * (y_dim - 1), (i - 1) % x_dim + x_dim * (y_dim - 2)),  # LeftNorth
+            (i + x_dim * (y_dim - 1), i + x_dim * (y_dim - 2)),  # MiddleNorth
+            (i + x_dim * (y_dim - 1), (i + 1) % x_dim + x_dim * (y_dim - 2)),  # RightNorth
+        ]
 
-        # NorthMiddle
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)))
-
-        # NorthRight
-        if i == x_dim-1:
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1-x_dim])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1-x_dim))
-        else: 
-            edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1])
-            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1))
-
+        for neighbor in neighbors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
 
         ith_point_under_the_bottom_neighbors = over_the_top_neighbors(i, 3)
         for j in ith_point_under_the_bottom_neighbors:
@@ -149,92 +115,218 @@ def add_k1_middle_connections(x_dim, y_dim, edge_attribute_assignment_fun):
 def add_k2_north_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
     edge_index, edge_attrs = [], []
     for i in range(x_dim):
-        ## North pole 
+        node_index = i
 
-        # Souther neighbors
-        edge_index.append([i, i+x_dim+2])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+x_dim+2))
+        neighbors = [
+            # Latitudinal neighbors
+            (i, (i - 1) % x_dim),  # Left
+            (i, (i - 2) % x_dim),  # LeftLeft
+            (i, (i + 1) % x_dim),  # Right
+            (i, (i + 2) % x_dim),  # RightRight
 
-        edge_index.append([i, i+x_dim-2])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+2*x_dim-2))
+            # Southern neighbors
+            (i, x_dim + (i - 1) % x_dim),  # LeftSouth
+            (i, x_dim + (i - 2) % x_dim),  # LeftLeftSouth
+            (i, x_dim * 2 + (i - 1) % x_dim),  # LeftSouthSouth
+            (i, i + x_dim),  # MiddleSouth
+            (i, i + x_dim * 2),  # MiddleSouthSouth
+            (i, x_dim + (i + 1) % x_dim),  # RightSouth
+            (i, x_dim + (i + 2) % x_dim),  # RightRightSouth
+            (i, x_dim * 2 + (i + 1) % x_dim),  # RightSouthSouth
+        ]
 
-        edge_index.append([i, i+2*x_dim-1])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+3*x_dim-1))
+        for neighbor in neighbors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
 
-        edge_index.append([i, i+2*x_dim+1])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+2*x_dim+1))
-
-        edge_index.append([i, i+2*x_dim])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+2*x_dim))
-
-        # Latitudinal neighbors
-        edge_index.append([i, i+2])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i+1))
-
-        edge_index.append([i, (i-2)%x_dim])
-        edge_attrs.append(edge_attribute_assignment_fun(i, i-1))
-
+        # Over the top neighbors
         ith_point_over_the_top_neighbors = over_the_top_neighbors(i, 8)
+
         for j in ith_point_over_the_top_neighbors:
             edge_index.append([i, j])
             edge_attrs.append(edge_attribute_assignment_fun(i, j))
+
+    return edge_index, edge_attrs
+
+def add_k2_north_2nd_row_connections(x_dim, y_dim, edge_attribute_assignment_fun):
+    edge_index, edge_attrs = [], []
+    for i in range(x_dim):
+        node_index = i + x_dim
+
+        neighbors = [
+            # Latitudinal neighbors
+            (i + x_dim, (i - 1) % x_dim + x_dim),  # Left
+            (i + x_dim, (i - 2) % x_dim + x_dim),  # LeftLeft
+            (i + x_dim, (i + 1) % x_dim + x_dim),  # Right
+            (i + x_dim, (i + 2) % x_dim + x_dim),  # RightRight
+
+            # Southern neighbors
+            (node_index, (i - 1) % x_dim + x_dim * 2),  # LeftSouth
+            (node_index, (i - 1) % x_dim + x_dim * 3),  # LeftSouthSouth
+            (node_index, (i - 2) % x_dim + x_dim * 2),  # LeftLeftSouth
+            (node_index, i % x_dim + x_dim * 2),  # MiddleSouth
+            (node_index, i % x_dim + x_dim * 3),  # MiddleSouthSouth
+            (node_index, (i + 1) % x_dim + x_dim * 2),  # RightSouth
+            (node_index, (i + 1) % x_dim + x_dim * 3),  # RightSouthSouth
+            (node_index, (i + 2) % x_dim + x_dim * 2),  # RightRightSouth
+
+            # Northern neighbors
+            (i + x_dim, (i - 1) % x_dim),  # LeftNorth
+            (i + x_dim, (i - 2) % x_dim),  # LeftLeftNorth
+            (i + x_dim, (i + 1) % x_dim),  # RightNorth
+            (i + x_dim, (i + 2) % x_dim),  # RightRightNorth
+            (i + x_dim, i),  # MiddleNorth
+        ]
+
+        for neighbor in neighbors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
+
+        # Over the top neighbors
+        ith_point_over_the_top_neighbors = over_the_top_neighbors(i, 3)
+
+        for j in ith_point_over_the_top_neighbors:
+            edge_index.append([i+x_dim, j + x_dim])
+            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim, j + x_dim))
+
+    return edge_index, edge_attrs
+
+def add_k2_middle_connections(x_dim, y_dim, edge_attribute_assignment_fun):
+    edge_index, edge_attrs = [], []
+    for i in range(2, y_dim-2):
+        for j in range(x_dim):
+            node_index = i * x_dim + j
+
+            # Neighbors: left, right, up, down, diagonals
+            neighbors = [
+                (i, (j - 1) % x_dim),  # Left
+                (i, (j - 2) % x_dim),  # LeftLeft
+
+                (i, (j + 1) % x_dim),  # Right
+                (i, (j + 2) % x_dim),  # RightRight
+
+                ((i - 1) % y_dim, j),  # Up
+                ((i - 2) % y_dim, j),  # UpUp
+
+                ((i + 1) % y_dim, j),  # Down
+                ((i + 2) % y_dim, j),  # DownDown
+
+                ((i - 1) % y_dim, (j - 1) % x_dim),  # Left Up
+                ((i - 1) % y_dim, (j - 2) % x_dim),  # LeftLeft Up
+                ((i - 2) % y_dim, (j - 1) % x_dim),  # Left UpUp
+
+                ((i - 1) % y_dim, (j + 1) % x_dim),  # Right Up
+                ((i - 1) % y_dim, (j + 2) % x_dim),  # RightRight Up
+                ((i - 2) % y_dim, (j + 1) % x_dim),  # Right UpUp
+
+                ((i + 1) % y_dim, (j - 1) % x_dim),  # Left Down
+                ((i + 1) % y_dim, (j - 2) % x_dim),  # LeftLeft Down
+                ((i + 2) % y_dim, (j - 1) % x_dim),  # Left DownDown
+
+                ((i + 1) % y_dim, (j + 1) % x_dim),   # Right Down
+                ((i + 1) % y_dim, (j + 2) % x_dim),   # RightRight Down
+                ((i + 2) % y_dim, (j + 1) % x_dim),   # Right DownDown
+            ]
+
+            for neighbor in neighbors:
+                neighbor_index = neighbor[0] * x_dim + neighbor[1]
+                edge_index.append([node_index, neighbor_index])
+                edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
+    return edge_index, edge_attrs
+
+def add_k2_south_2nd_row_connections(x_dim, y_dim, edge_attribute_assignment_fun):
+    edge_index, edge_attrs = [], []
+    for i in range(x_dim):
+        node_index = i + x_dim * (y_dim - 2)
+        neighboors = [
+            # Latitudinal neighbors
+            (i + x_dim * (y_dim - 2), (i - 1) % x_dim + x_dim * (y_dim - 2)),  # Left
+            (i + x_dim * (y_dim - 2), (i - 2) % x_dim + x_dim * (y_dim - 2)),  # LeftLeft
+            (i + x_dim * (y_dim - 2), (i + 1) % x_dim + x_dim * (y_dim - 2)),  # Right
+            (i + x_dim * (y_dim - 2), (i + 2) % x_dim + x_dim * (y_dim - 2)),  # RightRight
+
+            # Southern neighbors
+            (i + x_dim * (y_dim - 2), x_dim + (i - 1) % x_dim + x_dim * (y_dim - 2)),  # LeftSouth
+            (i + x_dim * (y_dim - 2), x_dim + (i - 2) % x_dim + x_dim * (y_dim - 2)),  # LeftLeftSouth
+            (i + x_dim * (y_dim - 2), i + x_dim + x_dim * (y_dim - 2)),  # MiddleSouth
+            (i + x_dim * (y_dim - 2), x_dim + (i + 1) % x_dim + x_dim * (y_dim - 2)),  # RightSouth
+            (i + x_dim * (y_dim - 2), x_dim + (i + 2) % x_dim + x_dim * (y_dim - 2)),  # RightRightSouth
+
+            # Northern neighbors
+            (i + x_dim * (y_dim - 2), (i - 1) % x_dim + x_dim * (y_dim - 3)),  # LeftNorth
+            (i + x_dim * (y_dim - 2), (i - 1) % x_dim + x_dim * (y_dim - 4)),  # LeftNorthNorth
+            (i + x_dim * (y_dim - 2), (i - 2) % x_dim + x_dim * (y_dim - 3)),  # LeftLeftNorth
+            (i + x_dim * (y_dim - 2), (i + 1) % x_dim + x_dim * (y_dim - 3)),  # RightNorth
+            (i + x_dim * (y_dim - 2), (i + 2) % x_dim + x_dim * (y_dim - 3)),  # RightRightNorth
+            (i + x_dim * (y_dim - 2), (i + 1) % x_dim + x_dim * (y_dim - 4)),  # RightNorthNorth
+            (i + x_dim * (y_dim - 2), i % x_dim + x_dim * (y_dim - 3)),  # MiddleNorth          
+            (i + x_dim * (y_dim - 2), i % x_dim + x_dim * (y_dim - 4)),  # MiddleNorthNorth
+        ]
+
+        for neighbor in neighboors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
+
+        ith_point_over_the_top_neighbors = over_the_top_neighbors(i, 3)
+
+        for j in ith_point_over_the_top_neighbors:
+            edge_index.append([i+x_dim*(y_dim-2), j + x_dim*(y_dim-2)])
+            edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-2), j + x_dim*(y_dim-2)))
+    
     return edge_index, edge_attrs
 
 def add_k2_south_pole_connections(x_dim, y_dim, edge_attribute_assignment_fun):
     edge_index, edge_attrs = [], []
     for i in range(x_dim):
-        ## South pole
+        node_index = i + x_dim * (y_dim - 1)
+        
+        neighbors = [
+            # Latitudinal neighbors
+            (i + x_dim * (y_dim - 1), (i - 1) % x_dim + x_dim * (y_dim - 1)),  # Left
+            (i + x_dim * (y_dim - 1), (i - 2) % x_dim + x_dim * (y_dim - 1)),  # LeftLeft
+            (i + x_dim * (y_dim - 1), (i + 1) % x_dim + x_dim * (y_dim - 1)),  # Right
+            (i + x_dim * (y_dim - 1), (i + 2) % x_dim + x_dim * (y_dim - 1)),  # RightRight
 
-        # Latitudinal neighbors
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-2])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)-2))
+            # Northern neighbors
+            (i + x_dim * (y_dim - 1), (i - 1) % x_dim + x_dim * (y_dim - 2)),  # LeftNorth
+            (i + x_dim * (y_dim - 1), (i - 2) % x_dim + x_dim * (y_dim - 2)),  # LeftLeftNorth
+            (i + x_dim * (y_dim - 1), (i - 1) % x_dim + x_dim * (y_dim - 3)),  # LeftNorthNorth
+            (i + x_dim * (y_dim - 1), (i + 1) % x_dim + x_dim * (y_dim - 2)),  # RightNorth
+            (i + x_dim * (y_dim - 1), (i + 2) % x_dim + x_dim * (y_dim - 2)),  # RightRightNorth
+            (i + x_dim * (y_dim - 1), (i + 1) % x_dim + x_dim * (y_dim - 3)),  # RightNorthNorth
+            (i + x_dim * (y_dim - 1), i % x_dim + x_dim * (y_dim - 2)),  # MiddleNorth
+            (i + x_dim * (y_dim - 1), i % x_dim + x_dim * (y_dim - 3)),  # MiddleNorthNorth
+        ]
 
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-1)+2])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), (i+2)%x_dim+x_dim*(y_dim-1)))
+        for neighbor in neighbors:
+            neighbor_index = neighbor[1]
+            edge_index.append([node_index, neighbor_index])
+            edge_attrs.append(edge_attribute_assignment_fun(node_index, neighbor_index))
+        
+        ith_point_under_the_bottom_neighbors = over_the_top_neighbors(i, 8)
 
-        # NorthLeftLeft
-
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-2])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-2))
-
-        # NorthRightRight
-
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+2])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+2))
-
-        # NorthNorthLeft
-
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-1])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)-1))
-
-        # NorthNorthMiddle
-
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)))
-
-        # NorthNorthRight
-
-        edge_index.append([i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1])
-        edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), i+x_dim*(y_dim-2)+1))
-
-        ith_point_under_the_bottom_neighbors = over_the_top_neighbors(i+x_dim*(y_dim-1), 8)
-            
         for j in ith_point_under_the_bottom_neighbors:
             edge_index.append([i+x_dim*(y_dim-1), j + x_dim*(y_dim-1)])
             edge_attrs.append(edge_attribute_assignment_fun(i+x_dim*(y_dim-1), j + x_dim*(y_dim-1)))
+        
     return edge_index, edge_attrs
 
-def create_neighbooring_edges(k = 1):
+
+
+def create_neighbooring_edges(k = 1, x_dim=120, y_dim=60):
     # Create points on a sphere with 3-degree resolution
+
+    edge_index, edge_attrs, points_xyz, points_theta_phi = [], [], [], []
+
     phi = np.arange(0, 2 * np.pi, np.deg2rad(3))
     theta = np.deg2rad(90-np.arange(0.5, 180, 3))
 
     xyz_calculation = lambda phi, theta: (np.cos(theta) * np.cos(phi), np.cos(theta) * np.sin(phi), np.sin(theta))
 
-    x_dim, y_dim = 120, 60 # hardcoded dimensions
-
-    edge_index, edge_attrs, points_xyz, points_theta_phi = [], [], [], []
-    #### Add points
+    ## Add points
     for j in range(y_dim):
         for i in range(x_dim):
             points_xyz.append(xyz_calculation(phi[i], theta[j]))
@@ -260,10 +352,30 @@ def create_neighbooring_edges(k = 1):
         edge_attrs += edge_attrs_south_k1
 
     if k == 2:
+        # North pole 1st row
         edge_index_north_k2, edge_attrs_north_k2 = add_k2_north_pole_connections(x_dim, y_dim, lambda_edge_attribute)
         edge_index += edge_index_north_k2
         edge_attrs += edge_attrs_north_k2
-        #print("Not implemented yet!")
+
+        # North pole 2nd row
+        edge_index_north_2nd_row_k2, edge_attrs_north_2nd_row_k2 = add_k2_north_2nd_row_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_north_2nd_row_k2
+        edge_attrs += edge_attrs_north_2nd_row_k2
+
+        # Middle neighbors
+        edge_index_middle_k2, edge_attrs_middle_k2 = add_k2_middle_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_middle_k2
+        edge_attrs += edge_attrs_middle_k2
+
+        # South pole 2nd row
+        edge_index_south_2nd_row_k2, edge_attrs_south_2nd_row_k2 = add_k2_south_2nd_row_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_south_2nd_row_k2
+        edge_attrs += edge_attrs_south_2nd_row_k2
+
+        # South pole 1st row
+        edge_index_south_k2, edge_attrs_south_k2 = add_k2_south_pole_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_south_k2
+        edge_attrs += edge_attrs_south_k2
 
     edge_index = np.array(edge_index).T
     edge_attrs = np.array(edge_attrs)
@@ -271,12 +383,12 @@ def create_neighbooring_edges(k = 1):
 
 
 if __name__ == "__main__": 
-    edge_index, edge_attrs, points_xyz, points_theta_phi = create_neighbooring_edges(k=1)
+    edge_index, edge_attrs, points_xyz, points_theta_phi = create_neighbooring_edges(k=2)
+
     for i in range(60*120-1):
         count = np.count_nonzero(edge_index[0] == i)
-        if count != 8:
+        if count != 20:
             print(i, count, 0)
-
         count = np.count_nonzero(edge_index[1] == i)
-        if count != 8:
+        if count != 20:
             print(i, count, 1)

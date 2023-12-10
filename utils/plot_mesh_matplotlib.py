@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mesh_creation import create_neighbooring_edges
 
-PLOT_EDGE_INDEX = 0
+PLOT_EDGE_INDEX = 60*120-1
 K = 2
 SHOW = True
-SAVE = True
-SAVE_PATH = 'test.png'
 
 edge_index, edge_attrs, points, points_theta_phi = create_neighbooring_edges(k=K)
 
