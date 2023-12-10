@@ -1,4 +1,4 @@
-from .custom_layers.LocalEmbeddingLayer3M import CustomGraphLayer
+from .custom_layers.LEL3M import CustomGraphLayer
 import torch
 import torch.nn as nn
 

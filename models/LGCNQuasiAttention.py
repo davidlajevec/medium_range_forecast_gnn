@@ -1,4 +1,4 @@
-from .custom_layers.LocalEmbeddingLayerM import CustomGraphLayer
+from .custom_layers.LELM import CustomGraphLayer
 import torch
 import torch.nn as nn
 from torch_geometric.nn import GCNConv

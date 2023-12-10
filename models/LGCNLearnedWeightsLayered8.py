@@ -1,20 +1,27 @@
-from .custom_layers.LocalEmbeddingLayer3M import CustomGraphLayer
+from .custom_layers.LEL3M import CustomGraphLayer
+#from .custom_layers.LEL3MSelfConnection import CustomGraphLayer
 import torch
 import torch.nn as nn
 
 class GNN(nn.Module):
-    def __init__(self, node_in_features, edge_in_features, hidden_channels, out_features):
+    def __init__(self, 
+        node_in_features, 
+        edge_in_features, 
+        hidden_channels, 
+        out_features, 
+        non_linearity=nn.ReLU()
+        ):
         super(GNN, self).__init__()
 
-        self.layer1 = CustomGraphLayer(node_in_features, edge_in_features, hidden_channels)
-        self.layer2 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer3 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer4 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer5 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer6 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer7 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer8 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels)
-        self.layer_last = CustomGraphLayer(hidden_channels, edge_in_features, out_features)
+        self.layer1 = CustomGraphLayer(node_in_features, edge_in_features, hidden_channels, non_linearity)
+        self.layer2 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer3 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer4 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer5 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer6 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer7 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer8 = CustomGraphLayer(hidden_channels, edge_in_features, hidden_channels, non_linearity)
+        self.layer_last = CustomGraphLayer(hidden_channels, edge_in_features, out_features, non_linearity)
 
         # Learnable weights
 

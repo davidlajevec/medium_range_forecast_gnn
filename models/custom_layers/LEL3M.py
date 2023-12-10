@@ -7,19 +7,23 @@ from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
 
 class CustomGraphLayer(MessagePassing):
-    def __init__(self, in_channels, edge_in_channels, out_channels):
-        super(CustomGraphLayer, self).__init__(aggr='add')  # 'add' aggregation.
+    def __init__(self, 
+        in_channels, 
+        edge_in_channels, 
+        out_channels,
+        non_linearity=nn.ReLU(),):
+        super(CustomGraphLayer, self).__init__()  
 
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
             nn.Linear(in_channels, out_channels),
-            nn.ReLU()
+            non_linearity
         )
 
         # Neural Network for first aggregation layer
         self.edge_nn = nn.Sequential(
             nn.Linear(out_channels + edge_in_channels, out_channels),
-            nn.ReLU()
+            non_linearity
         )
 
         self.aggregate_nn = nn.Sequential(
@@ -46,12 +50,16 @@ class CustomGraphLayer(MessagePassing):
         # x_i: Source node features [E, out_channels]
         # x_j: Target node features [E, out_channels]
         # edge_attr: Edge features [E, edge_in_channels]
+        
         # Combine node features with edge attributes
         tmp = torch.cat([x_j, edge_attr], dim=1) 
         return self.edge_nn(tmp)
 
     def aggregate(self, inputs: Tensor, index: Tensor, ptr: Tensor | None = None, dim_size: int | None = None) -> Tensor:
-        return scatter(inputs, index, dim=self.node_dim, reduce='mean')
+        mean_aggr = scatter(inputs, index, dim=self.node_dim, reduce='mean')
+        min_aggr = scatter(inputs, index, dim=self.node_dim, reduce='min')
+        max_aggr = scatter(inputs, index, dim=self.node_dim, reduce='max')
+        return torch.cat([mean_aggr, max_aggr, min_aggr], dim=1)    
 
     def update(self, aggr_out: Tensor):
         return aggr_out

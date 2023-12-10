@@ -11,6 +11,7 @@ The forecasts are plotted using the matplotlib library.
 """
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
@@ -26,17 +27,17 @@ import csv
 import json
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.LGCNLearnedWeightsLayeredMore import GNN
+from models.LGCNLearnedWeightsLayered8 import GNN
 
 # Define constants
-TRAINING_NAME = "layerd_64_12_lay"
+TRAINING_NAME = "layerd_128_leaky_relu"
 BATCH_SIZE = 4
 EPOCHS = 10
 VARIABLES = ["geopotential_500", "u_500", "v_500"]
 STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
 NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
 NUM_STATIC_FIELDS = len(STATIC_FIELDS)
-HIDDEN_CHANNELS = 64
+HIDDEN_CHANNELS = 128
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
@@ -44,7 +45,7 @@ PATIENCE = 3
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1970
+END_YEAR_TRAINING = 1980
 
 START_YEAR_VALIDATION = 2009
 END_YEAR_VALIDATION = 2015
@@ -62,6 +63,7 @@ model = GNN(
     edge_in_features=3, 
     hidden_channels=HIDDEN_CHANNELS, 
     out_features=NUM_ATMOSPHERIC_VARIABLES,
+    non_linearity=nn.LeakyReLU(0.1),
 )
 
 # Define the optimizer and loss function
