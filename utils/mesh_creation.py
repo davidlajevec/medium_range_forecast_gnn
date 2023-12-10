@@ -251,16 +251,19 @@ def create_neighbooring_edges(k = 1):
         edge_index += edge_index_north_k1
         edge_attrs += edge_attrs_north_k1
 
-        edge_index_south_k1, edge_attrs_south_k1 = add_k1_south_pole_connections(x_dim, y_dim, lambda_edge_attribute)
-        edge_index += edge_index_south_k1
-        edge_attrs += edge_attrs_south_k1
-
         edge_index_middle_k1, edge_attrs_middle_k1 = add_k1_middle_connections(x_dim, y_dim, lambda_edge_attribute)
         edge_index += edge_index_middle_k1
         edge_attrs += edge_attrs_middle_k1
 
+        edge_index_south_k1, edge_attrs_south_k1 = add_k1_south_pole_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_south_k1
+        edge_attrs += edge_attrs_south_k1
+
     if k == 2:
-        print("Not implemented yet!")
+        edge_index_north_k2, edge_attrs_north_k2 = add_k2_north_pole_connections(x_dim, y_dim, lambda_edge_attribute)
+        edge_index += edge_index_north_k2
+        edge_attrs += edge_attrs_north_k2
+        #print("Not implemented yet!")
 
     edge_index = np.array(edge_index).T
     edge_attrs = np.array(edge_attrs)

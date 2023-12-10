@@ -153,7 +153,7 @@ def train(
 if __name__ == "__main__":
     from datasets.atmospheric_dataset import AtmosphericDataset
     from models.LGCNLearnedWeightsLayered import GNN
-    from utils.mesh_creation_indexed import create_neighbooring_edges
+    from utils.mesh_creation import create_neighbooring_edges
     # Define constants
     TRAINING_NAME = "train_test"
     BATCH_SIZE = 16

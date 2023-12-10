@@ -17,7 +17,7 @@ from torch_geometric.data import Batch
 from datasets.atmospheric_dataset import AtmosphericDataset
 #from datasets.atmospheric_dataset_steps import AtmosphericDataset
 import matplotlib.pyplot as plt
-from utils.mesh_creation_indexed import create_neighbooring_edges
+from utils.mesh_creation import create_neighbooring_edges
 from train import train
 #from train_multiple_steps import train
 from predict import predict
@@ -46,7 +46,7 @@ INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 START_YEAR_TRAINING = 1950
 END_YEAR_TRAINING = 1970
 
-START_YEAR_VALIDATION = 2003
+START_YEAR_VALIDATION = 2009
 END_YEAR_VALIDATION = 2015
 
 START_YEAR_TEST = 2022

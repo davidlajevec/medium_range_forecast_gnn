@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from mesh_creation_indexed import create_neighbooring_edges
+from mesh_creation import create_neighbooring_edges
 
-PLOT_EDGE_INDEX = 3600
-K = 1
+PLOT_EDGE_INDEX = 0
+K = 2
 SHOW = True
+SAVE = True
+SAVE_PATH = 'test.png'
 
 edge_index, edge_attrs, points, points_theta_phi = create_neighbooring_edges(k=K)
 
@@ -32,7 +34,7 @@ def filter_pairs(adj_matrix, index=0):
     filtered_pairs = [[adj_matrix[0][i], adj_matrix[1][i]] for i in range(len(adj_matrix[0])) if adj_matrix[0][i] == index]
     return np.array(filtered_pairs).T
 
-filtered_edge_index = filter_pairs(edge_index, index=PLOT_EDGE_INDEX)
+filtered_edge_index = filter_pairs(edge_index, index=PLOT_EDGE_INDEX)   
 print(' '.join(map(str, filtered_edge_index[0, :])))
 print(' '.join(map(str, filtered_edge_index[1, :])))
 
@@ -49,3 +51,4 @@ ax.set_box_aspect([1, 1, 1])  # Matplotlib < 3.2.0 may not support set_box_aspec
 
 if SHOW:
     plt.show()
+

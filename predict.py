@@ -1,6 +1,6 @@
 import torch
 from datasets.atmospheric_dataset import AtmosphericDataset
-from utils.mesh_creation_indexed import create_neighbooring_edges
+from utils.mesh_creation import create_neighbooring_edges
 from utils.plot_atmospheric_field import plot_true_and_predicted_atomspheric_field
 from utils.utils import filename_to_climatology
 from utils.metrics import spherical_weighted_rmse, spherical_weighted_acc

@@ -1,55 +1,54 @@
 import numpy as np
+import os
+from concurrent.futures import ThreadPoolExecutor
 
-def calculate_mean_std_fields(root, atmosphere_variables, start_year, end_year):    
+def calculate_mean_std_fields_parallel(root, atmosphere_variables, start_year, end_year):
+    # Read annotations once
     with open(f"{root}/annotation_file.txt", "r") as f:
         annotations = f.readlines()
-    
-    file_names = [[] for variable in atmosphere_variables]
-    
-    years = list(range(start_year, end_year + 1))
+
+    # Prepare file names
+    file_names = {variable: [] for variable in atmosphere_variables}
+    years = set(range(start_year, end_year + 1))
+
     for line in annotations:
         year = int(line[2:6])
         if year in years:
-            for i, variable in enumerate(atmosphere_variables):
-                file_names[i].append(
+            for variable in atmosphere_variables:
+                file_names[variable].append(
                     f"{variable}/{variable}_{year}/{variable}{line[1:-1]}"
                 )
     if end_year == 2022:
-        for i, variable in enumerate(atmosphere_variables):
-            file_names[i].pop(-1)
-    
-    mean = np.zeros((len(atmosphere_variables), 60, 120))
-    std = np.zeros((len(atmosphere_variables), 60, 120))
-    for i, variable in enumerate(atmosphere_variables):
-        for file_name in file_names[i]:
-            data = np.load(f"{root}/{file_name}")
-            mean[i] += data
-        mean[i] /= len(file_names[i])
-        for file_name in file_names[i]:
-            data = np.load(f"{root}/{file_name}")
-            std[i] += (data - mean[i]) ** 2
-        std[i] /= len(file_names[i])
-        std[i] = np.sqrt(std[i])
-    return mean, std
+        for variable in atmosphere_variables:
+            file_names[variable].pop(-1)
 
+    # Define a function to process each variable
+    def process_variable(variable):
+        mean = np.zeros((60, 120))
+        std = np.zeros((60, 120))
+
+        data_list = []
+        for file_name in file_names[variable]:
+            data = np.load(f"{root}/{file_name}")
+            data_list.append(data)
+            mean += data
+        mean /= len(file_names[variable])
+
+        for data in data_list:
+            std += (data - mean) ** 2
+        std /= len(file_names[variable])
+        std = np.sqrt(std)
+
+        # Save the results
+        os.makedirs(f"data_12hr/{variable}", exist_ok=True)
+        np.save(f"data_12hr/{variable}/{variable}_mean.npy", mean)
+        np.save(f"data_12hr/{variable}/{variable}_std.npy", std)
+
+    # Use ThreadPoolExecutor for parallel processing
+    with ThreadPoolExecutor(max_workers=len(atmosphere_variables)) as executor:
+        executor.map(process_variable, atmosphere_variables)
+
+# Call the function
+# calculate_mean_std_fields_parallel(root, atmosphere_variables, start_year, end_year)
 if __name__ == "__main__":
-    mean, std = calculate_mean_std_fields("data_12hr", ["geopotential_500", "u_500", "v_500"], 1950, 2008)
-    
-    geopotential_500_mean = mean[0]
-    geopotential_500_std = std[0]
-
-    u_500_mean = mean[1]
-    u_500_std = std[1]
-
-    v_500_mean = mean[2]
-    v_500_std = std[2]
-
-    np.save("data_12hr/geopotential_500/geopotential_500_mean.npy", geopotential_500_mean)
-    np.save("data_12hr/geopotential_500/geopotential_500_std.npy", geopotential_500_std)
-
-    np.save("data_12hr/u_500/u_500_mean.npy", u_500_mean)
-    np.save("data_12hr/u_500/u_500_std.npy", u_500_std)
-
-    np.save("data_12hr/v_500/v_500_mean.npy", v_500_mean)
-    np.save("data_12hr/v_500/v_500_std.npy", v_500_std)
-
+    calculate_mean_std_fields_parallel("data_12hr", ["geopotential_500", "u_500", "v_500", "u_10"], 1950, 2008)

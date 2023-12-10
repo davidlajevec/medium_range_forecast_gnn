@@ -94,7 +94,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append(os.getcwd())
-    from utils.mesh_creation_indexed import create_neighbooring_edges
+    from utils.mesh_creation import create_neighbooring_edges
     from utils.plot_atmospheric_field import (
         plot_atmospheric_field,
         plot_true_and_predicted_atomspheric_field,
