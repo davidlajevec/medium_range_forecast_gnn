@@ -1,9 +1,7 @@
-#from .custom_layers.LEL3M import CustomGraphLayer
+from .custom_layers.LEL3M import CustomGraphLayer
 #from .custom_layers.LEL3MSelfConnection import CustomGraphLayer
 #from .custom_layers.LEL4M import CustomGraphLayer
-#from .custom_layers.LEL4MBNDrop import CustomGraphLayer
-from .custom_layers.LELNN import CustomGraphLayer
-#from .custom_layers.LEL4MSelfConnection import CustomGraphLayer
+#from .custom_layers.LELNN import CustomGraphLayer
 import torch
 import torch.nn as nn
 
@@ -53,19 +51,27 @@ class GNN(nn.Module):
 
         x2 = self.layer2(x1, edge_index, edge_attr)
         
-        x2_weighted = x1 * self.weight2_1 + x2 * self.weight2_2
+        weights2_sum = self.weight2_1 + self.weight2_2
+
+        x2_weighted = x1 * self.weight2_1/weights2_sum + x2 * self.weight2_2/weights2_sum
 
         x3 = self.layer3(x2_weighted, edge_index, edge_attr)
 
-        x3_weighted = x1 * self.weight3_1 + x2_weighted * self.weight3_2 + x3 * self.weight3_3
+        weights3_sum = self.weight3_1 + self.weight3_2 + self.weight3_3
+
+        x3_weighted = x1 * self.weight3_1/weights3_sum + x2_weighted * self.weight3_2/weights3_sum + x3 * self.weight3_3/weights3_sum
 
         x4 = self.layer4(x3_weighted, edge_index, edge_attr)
 
-        x4_weighted = x1 * self.weight4_1 + x2_weighted * self.weight4_2 + x3_weighted * self.weight4_3 + x4 * self.weight4_4
+        weights4_sum = self.weight4_1 + self.weight4_2 + self.weight4_3 + self.weight4_4
+
+        x4_weighted = x1 * self.weight4_1/weights4_sum + x2_weighted * self.weight4_2/weights4_sum + x3_weighted * self.weight4_3/weights4_sum + x4 * self.weight4_4/weights4_sum
 
         x5 = self.layer4(x4_weighted, edge_index, edge_attr)
+
+        weights5_sum = self.weight5_1 + self.weight5_2 + self.weight5_3 + self.weight5_4 + self.weight5_5
     
-        x5_weighted = x1 * self.weight5_1 + x2_weighted * self.weight5_2 + x3_weighted * self.weight5_3 + x4_weighted * self.weight5_4 + x5 * self.weight5_5
+        x5_weighted = x1 * self.weight5_1/weights5_sum + x2_weighted * self.weight5_2/weights5_sum + x3_weighted * self.weight5_3/weights5_sum + x4_weighted * self.weight5_4/weights5_sum + x5 * self.weight5_5/weights5_sum
 
         x = self.layer_last(x5_weighted, edge_index, edge_attr)
 

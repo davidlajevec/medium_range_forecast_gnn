@@ -1,4 +1,3 @@
-# LEL - Local Embedding Layer
 from typing import Optional
 import torch
 from torch import Tensor
@@ -6,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter
-from torch_geometric.utils import add_self_loops
 
 class CustomGraphLayer(MessagePassing):
     def __init__(self, 
@@ -14,31 +12,42 @@ class CustomGraphLayer(MessagePassing):
         edge_in_channels, 
         out_channels,
         non_linearity=nn.ReLU(),
-        ):
+        dropout_rate=0.2,
+        batch_norm=True):
         super(CustomGraphLayer, self).__init__()  
+
+        self.batch_norm = batch_norm
+        self.dropout = nn.Dropout(dropout_rate)
 
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
-            nn.Linear(in_channels, out_channels),
-            non_linearity
-        )
-
-        self.node_to_agg_nn = nn.Sequential(
-            nn.Linear(out_channels, out_channels//2),
-            non_linearity
+            nn.Linear(in_channels, out_channels // 2),
+            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            non_linearity,
+            self.dropout,
+            nn.Linear(out_channels // 2, out_channels // 2),
+            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            non_linearity,
+            self.dropout
         )
 
         # Neural Network for first aggregation layer
         self.edge_nn = nn.Sequential(
-            nn.Linear(out_channels + edge_in_channels, out_channels),
-            non_linearity
+            nn.Linear(out_channels // 2 + edge_in_channels, out_channels // 2),
+            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            non_linearity,
+            self.dropout,
+            nn.Linear(out_channels // 2, out_channels // 2),
+            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            non_linearity,
+            self.dropout
         )
 
         self.aggregate_nn = nn.Sequential(
-            nn.Linear(out_channels*3+out_channels, out_channels)
+            nn.Linear(out_channels//2*4, out_channels)
         )
 
-    def forward(self, x, edge_index, edge_attr):        
+    def forward(self, x, edge_index, edge_attr):
         # x: Node features [N, in_channels]
         # edge_index: Graph connectivity [2, E]
         # edge_attr: Edge features [E, edge_in_channels]
@@ -47,14 +56,12 @@ class CustomGraphLayer(MessagePassing):
         x = self.node_nn(x)
 
         # Step 2: First aggregation layer
-        agg1 = self.propagate(edge_index, size=(x.size(0), x.size(0)), x=x, edge_attr=edge_attr)
+        out = self.propagate(edge_index, size=(x.size(0), x.size(0)), x=x, edge_attr=edge_attr)
 
         # Step 3: Second aggregation layer
-        x_agg = torch.cat([x, agg1], dim=1)
+        out = self.aggregate_nn(out)
 
-        agg2 = self.aggregate_nn(x_agg)
-
-        return agg2
+        return out
 
     def message(self, x_i, x_j, edge_attr):
         # x_i: Source node features [E, out_channels]
@@ -67,9 +74,12 @@ class CustomGraphLayer(MessagePassing):
 
     def aggregate(self, inputs: Tensor, index: Tensor, ptr: Tensor | None = None, dim_size: int | None = None) -> Tensor:
         mean_aggr = scatter(inputs, index, dim=self.node_dim, reduce='mean')
+        squared_diff = (inputs - mean_aggr[index])**2
+        variance_aggr = scatter(squared_diff, index, dim=self.node_dim, reduce='mean')
+        std_aggr = torch.sqrt(variance_aggr)
         min_aggr = scatter(inputs, index, dim=self.node_dim, reduce='min')
         max_aggr = scatter(inputs, index, dim=self.node_dim, reduce='max')
-        return torch.cat([mean_aggr, max_aggr, min_aggr], dim=1)    
+        return torch.cat([mean_aggr, max_aggr, min_aggr, std_aggr], dim=1)    
 
     def update(self, aggr_out: Tensor):
         return aggr_out

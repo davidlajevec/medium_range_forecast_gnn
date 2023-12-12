@@ -52,21 +52,22 @@ def calculate_mean_std_fields_parallel(root, atmosphere_variables, start_year, e
 # calculate_mean_std_fields_parallel(root, atmosphere_variables, start_year, end_year)
 if __name__ == "__main__":
     calculate_mean_std_fields_parallel("data_12hr", 
-        ["geopotential_250",
+        [
+        "geopotential_250",
         "geopotential_500",
         "geopotential_700",
         "geopotential_850",
         "mslp",
         "potential_vorticity_500",
         "potential_vorticity_300",
-        "precipitation",
+        "prec",
         "sic",
         "snow",
         "soil_moisture_layer_1",
         "surface_temperature",
         "t2m",
         "t500",
-        "t800",
+        "t850",
         "toa_solar_radiation",
         "twv",
         "u_10m",
@@ -79,7 +80,7 @@ if __name__ == "__main__":
         "v_700",
         "u_900",
         "v_900",
-         ],
+        ],
         1950, 
         2008
         )

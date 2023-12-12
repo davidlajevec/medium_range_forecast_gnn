@@ -229,38 +229,42 @@ def predict(
 
 
 if __name__ == "__main__":
-    FORECAST_LENGTH = 14  # days
+    from utils.variables_sets import set1
+    FORECAST_LENGTH = 20  # days
     PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
-    PLOT = True
+    PLOT = False
     PLOT_INDEX = 0
     NUM_PREDICTIONS = 20
     INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
-    # load trained model
-    VARIABLES = ["geopotential_500", "u_500", "v_500"]
-    MODEL_NAME = "locally_embedded"
+    # load trained model["land_sea_mask", "surface_topography"]
+    VARIABLES = set1 
+    STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
+    MODEL_NAME = "layerd5_128_set1_lel4m"
 
     edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
-    edge_attrs = torch.tensor(edge_attrs.T, dtype=torch.float)
+    edge_attrs = torch.tensor(edge_attrs, dtype=torch.float)
 
     # load data to be predicted
     dataset = AtmosphericDataset(
         edge_index=edge_index,
         edge_attributes=edge_attrs,
         atmosphere_variables=VARIABLES,
+        static_fields=STATIC_FIELDS,
         start_year=2019,
         end_year=2019,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     predict(
-        MODEL_NAME,
-        PLOT,
-        VARIABLES,
-        PROJECTIONS,
-        device,
-        dataset,
-        FORECAST_LENGTH,
+        model_name = MODEL_NAME,
+        plot = PLOT,
+        variables = VARIABLES,
+        static_fields=STATIC_FIELDS,
+        projections = PROJECTIONS,
+        device = device,
+        dataset = dataset,
+        forecast_length=FORECAST_LENGTH,
         plot_index=PLOT_INDEX,
         num_predictions=NUM_PREDICTIONS,
         input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
