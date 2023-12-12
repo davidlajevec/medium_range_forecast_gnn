@@ -1,7 +1,7 @@
 #from .custom_layers.LEL3M import CustomGraphLayer
 #from .custom_layers.LEL3MSelfConnection import CustomGraphLayer
 #from .custom_layers.LEL4M import CustomGraphLayer
-#from .custom_layers.LEL4MBNDrop import CustomGraphLayer
+#from .custom_layers.LEL4MBN import CustomGraphLayer
 from .custom_layers.LELNN import CustomGraphLayer
 #from .custom_layers.LEL4MSelfConnection import CustomGraphLayer
 import torch

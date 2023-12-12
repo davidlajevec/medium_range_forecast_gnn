@@ -17,19 +17,19 @@ import json
 from utils.variables_sets import set1, set2, set3, set4
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.LGCNLearnedWeightsLayered5 import GNN
+from models.UNet3 import GNN
 #from models.LGCNLearnedWeightsLayered5 import GNN
 
 # Define constants
-TRAINING_NAME = "layerd5_128_set1_test"
-BATCH_SIZE = 1
+TRAINING_NAME = "unet_prvitest"
+BATCH_SIZE = 4
 EPOCHS = 15
 #VARIABLES = ["geopotential_500", "u_500", "v_500"]
 VARIABLES = set1
 STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
 NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
 NUM_STATIC_FIELDS = len(STATIC_FIELDS)
-HIDDEN_CHANNELS = 2
+HIDDEN_CHANNELS = 32
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
@@ -59,7 +59,6 @@ model = GNN(
     edge_in_features=3, 
     hidden_channels=HIDDEN_CHANNELS, 
     out_features=NUM_ATMOSPHERIC_VARIABLES,
-    non_linearity=NON_LINEARITY,
 )
 
 # Define the optimizer and loss function

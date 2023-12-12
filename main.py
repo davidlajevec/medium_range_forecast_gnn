@@ -10,36 +10,33 @@ from utils.mesh_creation import create_neighbooring_edges
 from train import train
 #from train_multiple_steps import train
 from predict import predict
-import os
-import csv
 import json
 
 from utils.variables_sets import set1, set2, set3, set4
 
 # CHECK IF RUNNING CORRECT MODEL
 from models.LGCNLearnedWeightsLayered5 import GNN
-#from models.LGCNLearnedWeightsLayered5 import GNN
 
 # Define constants
-TRAINING_NAME = "layerd5_128_set1_test"
-BATCH_SIZE = 1
+TRAINING_NAME = "layerd5_128_set1_nn_k2"
+BATCH_SIZE = 4
 EPOCHS = 15
 #VARIABLES = ["geopotential_500", "u_500", "v_500"]
 VARIABLES = set1
 STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
 NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
 NUM_STATIC_FIELDS = len(STATIC_FIELDS)
-HIDDEN_CHANNELS = 2
+HIDDEN_CHANNELS = 128
 LR = 0.001
 GAMMA = 0.99
 PATIENCE = 3
-NON_LINEARITY = nn.ReLU()
-K = 1
+NON_LINEARITY = nn.LeakyReLU()
+K = 2
 
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
 START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1980
+END_YEAR_TRAINING = 1970
 
 START_YEAR_VALIDATION = 2009
 END_YEAR_VALIDATION = 2015

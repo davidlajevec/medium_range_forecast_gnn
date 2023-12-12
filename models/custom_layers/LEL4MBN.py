@@ -12,23 +12,21 @@ class CustomGraphLayer(MessagePassing):
         edge_in_channels, 
         out_channels,
         non_linearity=nn.ReLU(),
-        dropout_rate=0.2,
-        batch_norm=True):
+        batch_norm=True,
+        last_layer=False):
         super(CustomGraphLayer, self).__init__()  
 
         self.batch_norm = batch_norm
-        self.dropout = nn.Dropout(dropout_rate)
+        self.last_layer = last_layer
 
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
             nn.Linear(in_channels, out_channels // 2),
             nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
             non_linearity,
-            self.dropout,
-            nn.Linear(out_channels // 2, out_channels // 2),
-            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
-            non_linearity,
-            self.dropout
+            #nn.Linear(out_channels // 2, out_channels // 2),
+            #nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            #non_linearity,
         )
 
         # Neural Network for first aggregation layer
@@ -36,15 +34,18 @@ class CustomGraphLayer(MessagePassing):
             nn.Linear(out_channels // 2 + edge_in_channels, out_channels // 2),
             nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
             non_linearity,
-            self.dropout,
-            nn.Linear(out_channels // 2, out_channels // 2),
-            nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
-            non_linearity,
-            self.dropout
+            #nn.Linear(out_channels // 2, out_channels // 2),
+            #nn.BatchNorm1d(out_channels // 2) if self.batch_norm else nn.Identity(),
+            #non_linearity
         )
 
         self.aggregate_nn = nn.Sequential(
-            nn.Linear(out_channels//2*4, out_channels)
+            nn.Linear(out_channels//2*4, out_channels),
+            nn.BatchNorm1d(out_channels) if self.batch_norm else nn.Identity(),
+            non_linearity,
+            #nn.Linear(out_channels, out_channels),
+            #nn.BatchNorm1d(out_channels) if self.batch_norm and not self.last_layer else nn.Identity(),
+            #non_linearity if not self.last_layer else nn.Identity()
         )
 
     def forward(self, x, edge_index, edge_attr):
@@ -69,6 +70,8 @@ class CustomGraphLayer(MessagePassing):
         # edge_attr: Edge features [E, edge_in_channels]
         
         # Combine node features with edge attributes
+        print(f"xj size:{x_j.shape}")
+        print(f"edge attr size:{edge_attr.shape}")
         tmp = torch.cat([x_j, edge_attr], dim=1) 
         return self.edge_nn(tmp)
 
