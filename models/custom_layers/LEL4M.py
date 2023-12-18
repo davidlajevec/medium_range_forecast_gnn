@@ -17,17 +17,19 @@ class CustomGraphLayer(MessagePassing):
         # Neural Network for node feature transformation
         self.node_nn = nn.Sequential(
             nn.Linear(in_channels, out_channels//2),
+            nn.BatchNorm1d(out_channels//2),
             non_linearity,
-            nn.Linear(out_channels//2, out_channels//2),
-            non_linearity
+            #nn.Linear(out_channels//2, out_channels//2),
+            #non_linearity
         )
 
         # Neural Network for first aggregation layer
         self.edge_nn = nn.Sequential(
             nn.Linear(out_channels//2 + edge_in_channels, out_channels//2),
+            nn.BatchNorm1d(out_channels//2),
             non_linearity,
-            nn.Linear(out_channels//2, out_channels//2),
-            non_linearity,
+            #nn.Linear(out_channels//2, out_channels//2),
+            #non_linearity,
         )
 
         self.aggregate_nn = nn.Sequential(

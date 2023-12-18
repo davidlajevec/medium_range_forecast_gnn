@@ -70,8 +70,8 @@ class CustomGraphLayer(MessagePassing):
         # edge_attr: Edge features [E, edge_in_channels]
         
         # Combine node features with edge attributes
-        print(f"xj size:{x_j.shape}")
-        print(f"edge attr size:{edge_attr.shape}")
+        # print(f"xj size:{x_j.shape}")
+        # print(f"edge attr size:{edge_attr.shape}")
         tmp = torch.cat([x_j, edge_attr], dim=1) 
         return self.edge_nn(tmp)
 

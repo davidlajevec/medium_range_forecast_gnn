@@ -17,24 +17,24 @@ import json
 from utils.variables_sets import set1, set2, set3, set4
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.UNet3 import GNN
+from models.UNettest_Custom import GNN
 #from models.LGCNLearnedWeightsLayered5 import GNN
 
 # Define constants
-TRAINING_NAME = "unet_prvitest"
+#gammmaaaaassssssssssssssssssss (999, 99), (95, 90)
+TRAINING_NAME = "final_1step_lr_001_gamma_995"
 BATCH_SIZE = 4
 EPOCHS = 15
-#VARIABLES = ["geopotential_500", "u_500", "v_500"]
 VARIABLES = set1
 STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
 NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
 NUM_STATIC_FIELDS = len(STATIC_FIELDS)
-HIDDEN_CHANNELS = 32
-LR = 0.001
-GAMMA = 0.99
-PATIENCE = 3
-NON_LINEARITY = nn.ReLU()
-K = 1
+HIDDEN_CHANNELS = 128
+LR = 1e-3
+GAMMA = 0.995
+PATIENCE = 5
+NON_LINEARITY = nn.LeakyReLU()
+K = 2
 
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
@@ -47,18 +47,23 @@ END_YEAR_VALIDATION = 2015
 START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
 
+# Set the device to GPU if available, otherwise CPU
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
 PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
 PLOT = True
 NUM_PREDICTIONS = 20
 
 FORECAST_LENGTH = 20 # days
 
-# Define the model
+
 model = GNN(
-    node_in_features=NUM_ATMOSPHERIC_VARIABLES + NUM_STATIC_FIELDS, 
-    edge_in_features=3, 
+    in_channels=NUM_ATMOSPHERIC_VARIABLES + NUM_STATIC_FIELDS, 
     hidden_channels=HIDDEN_CHANNELS, 
-    out_features=NUM_ATMOSPHERIC_VARIABLES,
+    out_channels=NUM_ATMOSPHERIC_VARIABLES,
+    depth=3,
+    sum_res=True,
+    act=NON_LINEARITY
 )
 
 # Define the optimizer and loss function
@@ -104,8 +109,6 @@ test_dataset = AtmosphericDataset(
     end_year=END_YEAR_TEST,
 )
 
-# Set the device to GPU if available, otherwise CPU
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 training_parameters = {
     'epoch': EPOCHS,

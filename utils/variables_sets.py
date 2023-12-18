@@ -2,8 +2,10 @@ set1 = ["geopotential_500",
         "mslp",
         "prec",
         "surface_temperature",
-        "t850",
-        "twv"
+        "t2m",
+        "u_10m",
+        "v_10m",
+        "twv",
          ]
 
 

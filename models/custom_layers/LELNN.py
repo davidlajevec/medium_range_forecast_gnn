@@ -18,17 +18,33 @@ class CustomGraphLayer(MessagePassing):
         
         self.node_nn = nn.Sequential(
             nn.Linear(in_channels, out_channels),
-            non_linearity
+            nn.BatchNorm1d(out_channels),
+            #nn.Dropout(p=0.3),
+            non_linearity,
+            #nn.Linear(out_channels, out_channels),
+            #nn.BatchNorm1d(out_channels),
+            #non_linearity,
         )
 
         # Neural Network for first aggregation layer
         self.edge_nn = nn.Sequential(
             nn.Linear(out_channels + edge_in_channels, out_channels//reduction_multiplier),
-            non_linearity
+            nn.BatchNorm1d(out_channels//reduction_multiplier),
+            #nn.Dropout(p=0.3),
+            non_linearity,
+            #nn.Linear(out_channels//reduction_multiplier, out_channels//reduction_multiplier),
+            #nn.BatchNorm1d(out_channels//reduction_multiplier),
+            #non_linearity
         )
 
         self.aggregate_nn = nn.Sequential(
-            nn.Linear(out_channels//reduction_multiplier*num_neighbors, out_channels)
+            nn.Linear(out_channels//reduction_multiplier*num_neighbors, out_channels), 
+            nn.BatchNorm1d(out_channels),
+            non_linearity,
+            nn.Linear(out_channels, out_channels),
+            nn.BatchNorm1d(out_channels),
+            non_linearity,
+            nn.Linear(out_channels, out_channels)
         )
 
     def forward(self, x, edge_index, edge_attr):
@@ -54,17 +70,11 @@ class CustomGraphLayer(MessagePassing):
     
     def aggregate(self, inputs, index, dim_size):
         concatenated_size = self.out_channels // self.reduction_multiplier * self.num_neighbors
-        
         sorted_indices = torch.argsort(index)
-
         inputs_sorted = inputs[sorted_indices]
-
         grouped_inputs = torch.stack(torch.split(inputs_sorted, self.num_neighbors))
-
         reshaped_inputs = grouped_inputs.view(-1, self.num_neighbors, self.out_channels // self.reduction_multiplier)
-
         concatenated = reshaped_inputs.view(dim_size, concatenated_size)
-
         return self.aggregate_nn(concatenated)
 
 

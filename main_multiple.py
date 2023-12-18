@@ -3,46 +3,47 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
-from datasets.atmospheric_dataset import AtmosphericDataset
+from datasets.atmospheric_dataset_multiple_steps import AtmosphericDataset
 #from datasets.atmospheric_dataset_steps import AtmosphericDataset
 import matplotlib.pyplot as plt
 from utils.mesh_creation import create_neighbooring_edges
-from train import train
 #from train_multiple_steps import train
+#from train_multiple_steps_2_cores import train
+from train_multiple_steps import train
 from predict import predict
+import os
+import csv
 import json
 
 from utils.variables_sets import set1, set2, set3, set4
 
 # CHECK IF RUNNING CORRECT MODEL
-from models.LGCNLearnedWeightsLayered7  import GNN 
+from models.UNettest_Custom import GNN
+#from models.LGCNLearnedWeightsLayered5 import GNN
 
 # Define constants
-TRAINING_NAME = "layerd7_128_nnagg2_k2"
-BATCH_SIZE = 4
-EPOCHS = 15
-#VARIABLES = ["geopotential_500", "u_500", "v_500"]
+TRAINING_NAME = "camelot2_4steps"
+BATCH_SIZE = 2
+EPOCHS = 10
 VARIABLES = set1
 STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
 NUM_ATMOSPHERIC_VARIABLES = len(VARIABLES) 
 NUM_STATIC_FIELDS = len(STATIC_FIELDS)
 HIDDEN_CHANNELS = 128
-LR = 0.001
+LR = 0.0005
 GAMMA = 0.99
-PATIENCE = 5
+PATIENCE = 3
 NON_LINEARITY = nn.LeakyReLU()
 K = 2
-
-# Set the device to GPU if available, otherwise CPU
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+NUM_OF_PREDICTION_STEPS = 4
 
 INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
 
-START_YEAR_TRAINING = 1950
-END_YEAR_TRAINING = 1980
+START_YEAR_TRAINING = 1990
+END_YEAR_TRAINING = 2015
 
-START_YEAR_VALIDATION = 2009
-END_YEAR_VALIDATION = 2012
+START_YEAR_VALIDATION = 2015
+END_YEAR_VALIDATION = 2020
 
 START_YEAR_TEST = 2022
 END_YEAR_TEST = 2022
@@ -53,26 +54,29 @@ NUM_PREDICTIONS = 20
 
 FORECAST_LENGTH = 20 # days
 
-def mae_loss(input, target):
-    return torch.mean(torch.abs(input - target))
+# Set the device to GPU if available, otherwise CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#model = torch.load("trained_models/unet_depth3_sum_05_drop_256_dropout_01/model.pth")
+#model = torch.load("trained_models/final_1step_lr_001_gamma_90/model.pth")
 
-criterion = torch.nn.MSELoss()
-#criterion = mae_loss
+model = torch.load("trained_models/old_models_2/unet_depth3_sum_05_drop_128hid_camelot2/model.pth")
+#model = torch.load("trained_models/old_models_2/layerd8_128_nn_k2/model.pth")
 
-# Define the model
-model = GNN(
-    node_in_features=NUM_ATMOSPHERIC_VARIABLES + NUM_STATIC_FIELDS, 
-    edge_in_features=3, 
-    hidden_channels=HIDDEN_CHANNELS, 
-    out_features=NUM_ATMOSPHERIC_VARIABLES,
-    non_linearity=NON_LINEARITY,
-)
+#model = GNN(
+#   in_channels=NUM_ATMOSPHERIC_VARIABLES + NUM_STATIC_FIELDS, 
+#   hidden_channels=HIDDEN_CHANNELS, 
+#   out_channels=NUM_ATMOSPHERIC_VARIABLES,
+#   depth=3,
+#   sum_res=True
+#)
 
 # Define the optimizer and loss function
 optimizer = torch.optim.Adam(
     model.parameters(), 
     lr=LR,
     )
+    
+criterion = torch.nn.MSELoss()
 
 # Create edges and points
 edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=K)
@@ -90,6 +94,7 @@ training_dataset = AtmosphericDataset(
     static_fields=STATIC_FIELDS,
     start_year=START_YEAR_TRAINING,
     end_year=END_YEAR_TRAINING,
+    num_of_prediction_steps=NUM_OF_PREDICTION_STEPS
 )
 validation_dataset = AtmosphericDataset(
     edge_index=edge_index,
@@ -98,6 +103,7 @@ validation_dataset = AtmosphericDataset(
     static_fields=STATIC_FIELDS,
     start_year=START_YEAR_VALIDATION,
     end_year=END_YEAR_VALIDATION,
+    num_of_prediction_steps=NUM_OF_PREDICTION_STEPS
 )
 
 test_dataset = AtmosphericDataset(
@@ -107,7 +113,9 @@ test_dataset = AtmosphericDataset(
     static_fields=STATIC_FIELDS,
     start_year=START_YEAR_TEST,
     end_year=END_YEAR_TEST,
+    num_of_prediction_steps=NUM_OF_PREDICTION_STEPS
 )
+
 
 training_parameters = {
     'epoch': EPOCHS,
@@ -133,7 +141,7 @@ training_parameters = {
 # Train the model
 train(
     model=model,
-    device=DEVICE,
+    device=device,
     epochs=EPOCHS,
     training_dataset=training_dataset,
     validation_dataset=validation_dataset,
@@ -144,7 +152,9 @@ train(
     training_name=TRAINING_NAME,
     patience=PATIENCE,
     input_graph_attributes=INPUT_GRAPH_ATTRIBUTES,
+    number_of_prediction_steps=NUM_OF_PREDICTION_STEPS  
 )
+
 
 # Save training parameters to disk
 with open(f"trained_models/{TRAINING_NAME}/training_parameters.json", "w") as f:
@@ -157,7 +167,7 @@ predict(
     variables=VARIABLES,
     static_fields=STATIC_FIELDS,
     projections=PROJECTIONS,
-    device=DEVICE,
+    device=device,
     dataset=test_dataset,
     forecast_length=FORECAST_LENGTH,
     plot_index=0,

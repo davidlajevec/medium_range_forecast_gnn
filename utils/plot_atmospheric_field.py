@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import cartopy.crs as ccrs
+import matplotlib.patches as patches
 
 
 def plot_atmospheric_field(
@@ -187,7 +188,7 @@ def plot_true_and_predicted_atomspheric_field(
 
     # Create a new figure and add a subplot with the specified projection
     fig, axs = plt.subplots(
-        1, 2, figsize=(11.8, 5), subplot_kw={"projection": projection}
+        1, 2, figsize=(11.8, 5), subplot_kw={"projection": projection} #,facecolor='black'}
     )
     fig.suptitle(title, fontsize=14, fontweight="bold", y = height_title)
     # Create a filled contour plot of the data with specified levels and colormap

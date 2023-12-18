@@ -77,7 +77,7 @@ def predict(
         print("Num_predictions must be less than the length of the dataset!")
     else:
         indices = list(range(len(dataset) - forecast_length * 2))
-    #model = torch.jit.load(f"trained_models/{model_name}/traced_model.pt")
+
     model = torch.load(f"trained_models/{model_name}/model.pth")
     with torch.no_grad():
         model.to(device)
@@ -128,7 +128,8 @@ def predict(
                 y_true_grid = data.y.view(60, 120, num_variables).cpu()
                 y_true_grid = dataset.unstandardize(y_true_grid).numpy()
 
-                for j, variable in enumerate(variables):
+                #for j, variable in enumerate(variables):
+                for j, variable in enumerate(["geopotential_500"]):
                     climatology_field = filename_to_climatology(
                         dataset.file_names[j][i]
                     )
@@ -175,6 +176,7 @@ def predict(
                                 y_pred_grid[:, :, j],
                                 show=False,
                                 save=True,
+                                show_colorbar=False,
                                 save_path=f"trained_models/{model_name}/forecast_plot/{variable}/{projection_name}/prediction_{i}.png",
                                 left_title="True",
                                 right_title="Predicted",
@@ -230,18 +232,20 @@ def predict(
 
 if __name__ == "__main__":
     from utils.variables_sets import set1
-    FORECAST_LENGTH = 20  # days
-    PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
-    PLOT = False
+    FORECAST_LENGTH = 14  # days
+    #PROJECTIONS = ["ccrs.Orthographic(-10, 62)", "ccrs.Robinson()"]
+    PROJECTIONS = ["ccrs.Robinson()"]
+    PLOT = True
     PLOT_INDEX = 0
-    NUM_PREDICTIONS = 20
+    NUM_PREDICTIONS = 30
     INPUT_GRAPH_ATTRIBUTES = ["x", "edge_index", "edge_attr"]
     # load trained model["land_sea_mask", "surface_topography"]
     VARIABLES = set1 
     STATIC_FIELDS = ["land_sea_mask", "surface_topography"]
-    MODEL_NAME = "layerd5_128_set1_lel4m"
+    #MODEL_NAME = "oldmodel_4steps"
+    MODEL_NAME = "camelot2_4steps"
 
-    edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=1)
+    edge_index, edge_attrs, _, _ = create_neighbooring_edges(k=2)
     edge_index = torch.tensor(edge_index, dtype=torch.long)
     edge_attrs = torch.tensor(edge_attrs, dtype=torch.float)
 
@@ -251,8 +255,8 @@ if __name__ == "__main__":
         edge_attributes=edge_attrs,
         atmosphere_variables=VARIABLES,
         static_fields=STATIC_FIELDS,
-        start_year=2019,
-        end_year=2019,
+        start_year=2016,
+        end_year=2016,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

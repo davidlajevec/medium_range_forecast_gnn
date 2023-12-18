@@ -42,7 +42,7 @@ class GNN(nn.Module):
         in_channels = node_in_features
         for i in range(depth):
             self.down_convs.append(CustomGraphLayer(in_channels, edge_in_features, hidden_channels))
-            self.down_pools.append(CustomTopKPooling(hidden_channels, ratio=0.5))
+            self.down_pools.append(TopKPooling(hidden_channels, ratio=0.5))
             in_channels = hidden_channels
             hidden_channels *= 2  # Double the number of channels after each layer
 
